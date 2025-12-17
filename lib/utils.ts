@@ -52,3 +52,15 @@ export function formatDate(date: Date | string): string {
   }).format(new Date(date))
 }
 
+export function formatDiscountType(discountType?: string): string {
+  if (!discountType) return ''
+  switch (discountType) {
+    case 'percent':
+      return 'Percentual'
+    case 'fixed':
+      return 'Valor Fixo'
+    default:
+      return discountType
+  }
+}
+

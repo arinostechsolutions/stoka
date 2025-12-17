@@ -106,8 +106,8 @@ export default async function ProductDetailPage({
             {product.supplierId && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Fornecedor:</span>
-                <Link href={`/fornecedores/${product.supplierId._id}`} className="text-primary hover:underline">
-                  {product.supplierId.name}
+                <Link href={`/fornecedores/${typeof product.supplierId === 'object' && '_id' in product.supplierId ? (product.supplierId as any)._id.toString() : (product.supplierId as any).toString()}`} className="text-primary hover:underline">
+                  {typeof product.supplierId === 'object' && 'name' in product.supplierId ? String((product.supplierId as any).name) : 'Fornecedor'}
                 </Link>
               </div>
             )}

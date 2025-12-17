@@ -33,6 +33,10 @@ interface ProductCardProps {
     minQuantity: number
     purchasePrice?: number
     salePrice?: number
+    size?: string
+    color?: string
+    brand?: string
+    material?: string
   }
 }
 
@@ -189,6 +193,10 @@ export function ProductCard({ product }: ProductCardProps) {
               minQuantity: product.minQuantity,
               purchasePrice: product.purchasePrice,
               salePrice: product.salePrice,
+              size: product.size,
+              color: product.color,
+              brand: product.brand,
+              material: product.material,
             }}
           >
             <Button variant="outline" size="sm" className="px-3">

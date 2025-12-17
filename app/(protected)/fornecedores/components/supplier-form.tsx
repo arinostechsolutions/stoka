@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,6 +42,23 @@ export function SupplierForm({ children, supplier }: SupplierFormProps) {
   const [cnpjValue, setCnpjValue] = useState(supplier?.cnpj ? maskCNPJ(supplier.cnpj) : '')
   const [cnpjError, setCnpjError] = useState('')
   const [category, setCategory] = useState<'geral' | 'vestuario'>(supplier?.category || 'geral')
+
+  // Atualiza os estados quando a modal abre ou quando o supplier muda
+  useEffect(() => {
+    if (open) {
+      if (supplier) {
+        // Ao abrir para editar, carrega os valores do fornecedor
+        setCategory(supplier.category || 'geral')
+        setPhoneValue(supplier.phone ? maskPhone(supplier.phone) : '')
+        setCnpjValue(supplier.cnpj ? maskCNPJ(supplier.cnpj) : '')
+      } else {
+        // Ao abrir para criar novo, reseta os valores
+        setCategory('geral')
+        setPhoneValue('')
+        setCnpjValue('')
+      }
+    }
+  }, [open, supplier])
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const masked = maskPhone(e.target.value)
@@ -146,7 +163,7 @@ export function SupplierForm({ children, supplier }: SupplierFormProps) {
                   <Tag className="h-4 w-4" />
                   Categoria
                 </Label>
-                <Select value={category} onValueChange={(v: 'geral' | 'vestuario') => setCategory(v)}>
+                <Select value={category} onValueChange={(v) => setCategory(v as 'geral' | 'vestuario')}>
                   <SelectTrigger className="h-11">
                     <SelectValue
                       displayValue={

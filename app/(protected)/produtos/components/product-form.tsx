@@ -67,14 +67,29 @@ export function ProductForm({ children, product }: ProductFormProps) {
   })
   
   // Verifica se o fornecedor selecionado é de vestuário
-  const selectedSupplierData = suppliers.find((s: any) => s._id === selectedSupplier)
-  const isVestuarioSupplier = selectedSupplierData?.category === 'vestuario'
+  const selectedSupplierData = React.useMemo(() => {
+    return suppliers.find((s: any) => s._id === selectedSupplier)
+  }, [suppliers, selectedSupplier])
+  
+  const isVestuarioSupplier = React.useMemo(() => {
+    return selectedSupplierData?.category === 'vestuario'
+  }, [selectedSupplierData])
+  
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
 
     const formData = new FormData(e.currentTarget)
+
+    // Garante que os campos de vestuário sejam sempre enviados (mesmo que vazios)
+    // Isso é necessário para que o backend saiba que os campos foram enviados
+    if (isVestuarioSupplier) {
+      formData.set('size', size || '')
+      formData.set('color', color || '')
+      formData.set('brand', brand || '')
+      formData.set('material', material || '')
+    }
 
     startTransition(async () => {
       const result = product
@@ -99,13 +114,16 @@ export function ProductForm({ children, product }: ProductFormProps) {
   // Reset form when modal opens/closes or product changes
   React.useEffect(() => {
     if (open && product) {
+      setSelectedSupplier(product.supplierId || '')
       setPurchasePrice(product.purchasePrice?.toString() || '')
       setSalePrice(product.salePrice?.toString() || '')
       setSize(product.size || '')
       setColor(product.color || '')
       setBrand(product.brand || '')
       setMaterial(product.material || '')
-    } else if (!open) {
+    } else if (!open && !product) {
+      // Só reseta se não estiver editando
+      setSelectedSupplier('')
       setPurchasePrice('')
       setSalePrice('')
       setSize('')
@@ -140,50 +158,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
             )}
 
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-semibold flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  Nome do Produto *
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={product?.name}
-                  required
-                  placeholder="Ex: Notebook Dell"
-                  className="h-11 text-base"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sku" className="text-sm font-semibold flex items-center gap-2">
-                    <Hash className="h-4 w-4" />
-                    SKU
-                  </Label>
-                  <Input
-                    id="sku"
-                    name="sku"
-                    defaultValue={product?.sku}
-                    placeholder="Ex: NTB-001"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm font-semibold flex items-center gap-2">
-                    <Tag className="h-4 w-4" />
-                    Categoria
-                  </Label>
-                  <Input
-                    id="category"
-                    name="category"
-                    defaultValue={product?.category}
-                    placeholder="Ex: Eletrônicos"
-                    className="h-11"
-                  />
-                </div>
-              </div>
-
+              {/* Fornecedor - PRIMEIRO CAMPO */}
               <div className="space-y-2">
                 <Label htmlFor="supplier" className="text-sm font-semibold flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
@@ -210,7 +185,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
                       <SelectItem value="">Nenhum fornecedor</SelectItem>
                       {suppliers.map((supplier: any) => (
                         <SelectItem key={supplier._id} value={supplier._id}>
-                          {supplier.name}
+                          {supplier.name} {supplier.category === 'vestuario' && '👕'}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -219,73 +194,9 @@ export function ProductForm({ children, product }: ProductFormProps) {
                 <input type="hidden" name="supplierId" value={selectedSupplier} />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border">
-                <div className="space-y-2">
-                  <Label htmlFor="quantity" className="text-sm font-semibold flex items-center gap-2">
-                    <Box className="h-4 w-4" />
-                    Quantidade Atual *
-                  </Label>
-                  <Input
-                    id="quantity"
-                    name="quantity"
-                    type="number"
-                    min="0"
-                    defaultValue={product?.quantity ?? 0}
-                    required
-                    className="h-11 text-lg font-semibold"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="minQuantity" className="text-sm font-semibold flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    Estoque Mínimo *
-                  </Label>
-                  <Input
-                    id="minQuantity"
-                    name="minQuantity"
-                    type="number"
-                    min="0"
-                    defaultValue={product?.minQuantity ?? 0}
-                    required
-                    className="h-11 text-lg font-semibold"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="purchasePrice" className="text-sm font-semibold flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Preço de Compra
-                  </Label>
-                  <CurrencyInput
-                    id="purchasePrice"
-                    name="purchasePrice"
-                    value={purchasePrice}
-                    onChange={setPurchasePrice}
-                    placeholder="0,00"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="salePrice" className="text-sm font-semibold flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Preço de Venda
-                  </Label>
-                  <CurrencyInput
-                    id="salePrice"
-                    name="salePrice"
-                    value={salePrice}
-                    onChange={setSalePrice}
-                    placeholder="0,00"
-                    className="h-11"
-                  />
-                </div>
-              </div>
-
-              {/* Campos específicos para vestuário */}
+              {/* Campos de vestuário - aparecem IMEDIATAMENTE após selecionar fornecedor de vestuário */}
               {isVestuarioSupplier && (
-                <div className="space-y-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200">
+                <div className="space-y-4 p-4 bg-purple-50 rounded-lg border-2 border-purple-200 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="flex items-center gap-2 mb-2">
                     <Shirt className="h-5 w-5 text-purple-600" />
                     <h3 className="font-semibold text-purple-900">Informações de Vestuário</h3>
@@ -354,6 +265,115 @@ export function ProductForm({ children, product }: ProductFormProps) {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Nome do Produto *
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={product?.name}
+                  required
+                  placeholder="Ex: Notebook Dell"
+                  className="h-11 text-base"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sku" className="text-sm font-semibold flex items-center gap-2">
+                    <Hash className="h-4 w-4" />
+                    SKU
+                  </Label>
+                  <Input
+                    id="sku"
+                    name="sku"
+                    defaultValue={product?.sku}
+                    placeholder="Ex: NTB-001"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-sm font-semibold flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Categoria
+                  </Label>
+                  <Input
+                    id="category"
+                    name="category"
+                    defaultValue={product?.category}
+                    placeholder="Ex: Eletrônicos"
+                    className="h-11"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border">
+                <div className="space-y-2">
+                  <Label htmlFor="quantity" className="text-sm font-semibold flex items-center gap-2">
+                    <Box className="h-4 w-4" />
+                    Quantidade Atual *
+                  </Label>
+                  <Input
+                    id="quantity"
+                    name="quantity"
+                    type="number"
+                    min="0"
+                    defaultValue={product?.quantity ?? 0}
+                    required
+                    className="h-11 text-lg font-semibold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="minQuantity" className="text-sm font-semibold flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Estoque Mínimo *
+                  </Label>
+                  <Input
+                    id="minQuantity"
+                    name="minQuantity"
+                    type="number"
+                    min="0"
+                    defaultValue={product?.minQuantity ?? 0}
+                    required
+                    className="h-11 text-lg font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="purchasePrice" className="text-sm font-semibold flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Preço de Compra
+                  </Label>
+                  <CurrencyInput
+                    id="purchasePrice"
+                    name="purchasePrice"
+                    value={purchasePrice}
+                    onChange={setPurchasePrice}
+                    placeholder="0,00"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="salePrice" className="text-sm font-semibold flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Preço de Venda
+                  </Label>
+                  <CurrencyInput
+                    id="salePrice"
+                    name="salePrice"
+                    value={salePrice}
+                    onChange={setSalePrice}
+                    placeholder="0,00"
+                    className="h-11"
+                  />
+                </div>
+              </div>
+
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t">

@@ -3,6 +3,12 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileNav } from '@/components/layout/mobile-nav'
+import { warmUpDB } from '@/lib/db-warmup'
+
+// Warm-up da conexão com o banco em background (não bloqueia)
+warmUpDB().catch(() => {
+  // Ignora erros no warm-up
+})
 
 export default async function ProtectedLayout({
   children,

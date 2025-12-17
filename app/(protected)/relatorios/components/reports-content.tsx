@@ -165,7 +165,16 @@ export function ReportsContent() {
     entradas: item.entradas || 0,
     saidas: item.saidas || 0,
     gastos: item.gastos || 0,
+    receitas: item.receitas || 0,
   }))
+
+  // Calcula totais a partir dos dados do gráfico (que já estão corretos)
+  const calculatedTotalSpent = formattedDailyMovements.reduce((sum: number, item: any) => sum + (item.gastos || 0), 0)
+  const calculatedTotalRevenue = formattedDailyMovements.reduce((sum: number, item: any) => sum + (item.receitas || 0), 0)
+  
+  // Usa os valores calculados do gráfico se os da API estiverem zerados ou se o gráfico tiver dados
+  const displayTotalSpent = calculatedTotalSpent > 0 ? calculatedTotalSpent : totalSpent
+  const displayTotalRevenue = calculatedTotalRevenue > 0 ? calculatedTotalRevenue : totalRevenue
 
   return (
     <div className="space-y-6">
@@ -266,7 +275,7 @@ export function ReportsContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(totalSpent)}
+              {formatCurrency(displayTotalSpent)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               No período selecionado
@@ -281,7 +290,7 @@ export function ReportsContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(totalRevenue)}
+              {formatCurrency(displayTotalRevenue)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               No período selecionado
@@ -356,11 +365,11 @@ export function ReportsContent() {
         </CardContent>
       </Card>
 
-      {/* Gráfico de gastos diários */}
-      {formattedDailyMovements.some((d: any) => d.gastos > 0) ? (
+      {/* Gráfico de gastos e receitas diários */}
+      {formattedDailyMovements.some((d: any) => d.gastos > 0 || d.receitas > 0) ? (
         <Card>
           <CardHeader>
-            <CardTitle>Gastos Diários</CardTitle>
+            <CardTitle>Gastos e Receitas Diários</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -368,9 +377,10 @@ export function ReportsContent() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Tooltip formatter={(value: number | undefined) => formatCurrency(value || 0)} />
                 <Legend />
                 <Bar dataKey="gastos" fill="#ef4444" name="Gastos" />
+                <Bar dataKey="receitas" fill="#10b981" name="Receitas" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -389,7 +399,7 @@ export function ReportsContent() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
                 <YAxis dataKey="name" type="category" width={150} />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Tooltip formatter={(value: number | undefined) => formatCurrency(value || 0)} />
                 <Legend />
                 <Bar dataKey="value" fill="#3b82f6" name="Valor" />
               </BarChart>

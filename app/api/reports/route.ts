@@ -65,8 +65,8 @@ export async function GET(request: Request) {
       }
     }
 
-    // Gastos totais (entradas com totalPrice)
-    // Se não há filtro de data, busca todas as entradas
+    // Gastos totais (entradas)
+    // Usa totalPrice da movimentação se existir, senão usa purchasePrice do produto * quantity
     const totalSpentMatch: any = {
       ...additionalFilters,
       type: 'entrada',
@@ -77,61 +77,64 @@ export async function GET(request: Request) {
       totalSpentMatch.createdAt = dateFilter.createdAt
     }
 
-    // Debug: verificar movimentações de entrada
-    const testEntradas = await Movement.find(totalSpentMatch).limit(10).lean()
-    console.log('=== DEBUG TOTAL GASTO ===')
-    console.log('TotalSpentMatch:', JSON.stringify(totalSpentMatch, null, 2))
-    console.log('Entradas encontradas (total):', await Movement.countDocuments(totalSpentMatch))
-    console.log('Amostra de entradas:', testEntradas.map((m: any) => ({
-      id: m._id,
-      type: m.type,
-      quantity: m.quantity,
-      price: m.price,
-      totalPrice: m.totalPrice,
-      hasTotalPrice: m.totalPrice !== null && m.totalPrice !== undefined,
-      createdAt: m.createdAt,
-    })))
+    // Busca todas as entradas com populate do produto para pegar purchasePrice
+    const entradaMovements = await Movement.find(totalSpentMatch)
+      .populate('productId', 'purchasePrice')
+      .lean()
 
-    // Busca todas as entradas e soma os totalPrice que existem e são > 0
-    const totalSpentResult = await Movement.aggregate([
-      { $match: totalSpentMatch },
-      {
-        $group: {
-          _id: null,
-          total: {
-            $sum: {
-              $cond: [
-                { $and: [{ $ne: ['$totalPrice', null] }, { $ne: ['$totalPrice', undefined] }, { $gt: ['$totalPrice', 0] }] },
-                '$totalPrice',
-                0,
-              ],
-            },
-          },
-        },
-      },
-    ])
-    
-    console.log('TotalSpentResult:', totalSpentResult)
-    const totalSpent = totalSpentResult[0]?.total || 0
+    let totalSpent = 0
+    entradaMovements.forEach((movement: any) => {
+      if (movement.totalPrice && movement.totalPrice > 0) {
+        // Se tem totalPrice na movimentação, usa ele
+        totalSpent += movement.totalPrice
+      } else if (movement.productId?.purchasePrice && movement.quantity) {
+        // Se não tem totalPrice, usa purchasePrice do produto * quantity
+        totalSpent += movement.productId.purchasePrice * movement.quantity
+      }
+    })
+
+    console.log('=== DEBUG TOTAL GASTO ===')
+    console.log('Entradas encontradas:', entradaMovements.length)
     console.log('Total Gasto calculado:', totalSpent)
 
     // Receitas totais (saídas com preço de venda do produto)
     const revenueMatch: any = {
       ...additionalFilters,
       type: 'saida',
-      ...dateFilter,
+    }
+    
+    // Adiciona filtro de data se existir
+    if (dateFilter.createdAt) {
+      revenueMatch.createdAt = dateFilter.createdAt
     }
 
-    const movements = await Movement.find(revenueMatch)
-      .populate('productId', 'salePrice')
-      .lean()
+    const saidaMovements = await Movement.find(revenueMatch).lean()
 
     let totalRevenue = 0
-    movements.forEach((movement: any) => {
-      if (movement.productId?.salePrice && movement.quantity) {
-        totalRevenue += movement.productId.salePrice * movement.quantity
+    saidaMovements.forEach((movement: any) => {
+      if (movement.totalRevenue && movement.totalRevenue > 0) {
+        // Usa totalRevenue da movimentação (já tem desconto aplicado)
+        totalRevenue += movement.totalRevenue
+      } else if (movement.salePrice && movement.quantity) {
+        // Fallback: calcula baseado no salePrice da movimentação
+        let subtotal = movement.salePrice * movement.quantity
+        let discount = 0
+        
+        if (movement.discountType && movement.discountValue !== undefined) {
+          if (movement.discountType === 'percent') {
+            discount = subtotal * (movement.discountValue / 100)
+          } else {
+            discount = movement.discountValue
+          }
+        }
+        
+        totalRevenue += Math.max(0, subtotal - discount)
       }
     })
+
+    console.log('=== DEBUG TOTAL RECEITA ===')
+    console.log('Saídas encontradas:', saidaMovements.length)
+    console.log('Total Receita calculado:', totalRevenue)
 
     // Valor total do estoque (soma de purchasePrice * quantity de todos os produtos)
     let stockFilter: any = { userId: userIdFilter }
@@ -142,6 +145,13 @@ export async function GET(request: Request) {
         stockFilter._id = productId
       }
     }
+    if (supplierId && supplierId !== 'all') {
+      try {
+        stockFilter.supplierId = new mongoose.Types.ObjectId(supplierId)
+      } catch {
+        stockFilter.supplierId = supplierId
+      }
+    }
 
     const products = await Product.find(stockFilter).lean()
     let totalStockValue = 0
@@ -150,6 +160,10 @@ export async function GET(request: Request) {
         totalStockValue += product.purchasePrice * product.quantity
       }
     })
+
+    console.log('=== DEBUG VALOR ESTOQUE ===')
+    console.log('Produtos encontrados:', products.length)
+    console.log('Valor total do estoque:', totalStockValue)
 
     // Movimentações por dia (últimos 90 dias ou período selecionado)
     let dateRangeStart: Date
@@ -251,6 +265,21 @@ export async function GET(request: Request) {
               ],
             },
           },
+          receitas: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$type', 'saida'] },
+                    { $ne: ['$totalRevenue', null] },
+                    { $gt: ['$totalRevenue', 0] },
+                  ],
+                },
+                '$totalRevenue',
+                0,
+              ],
+            },
+          },
         },
       },
       { $sort: { _id: 1 } },
@@ -282,10 +311,8 @@ export async function GET(request: Request) {
         : 0,
     }))
 
-    const finalTotalSpent = totalSpentResult[0]?.total || 0
-    
     return NextResponse.json({
-      totalSpent: finalTotalSpent,
+      totalSpent,
       totalRevenue,
       totalStockValue,
       dailyMovements,

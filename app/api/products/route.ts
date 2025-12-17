@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import connectDB from '@/lib/db'
 import Product from '@/lib/models/Product'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -12,10 +12,26 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const supplierId = searchParams.get('supplierId')
+
     await connectDB()
 
-    const products = await Product.find({ userId: session.user.id as any })
-      .select('_id name quantity')
+    const filter: any = { userId: session.user.id as any }
+    
+    // Filtra por fornecedor se fornecido
+    if (supplierId && supplierId !== 'all' && supplierId !== '') {
+      try {
+        const mongoose = await import('mongoose')
+        filter.supplierId = new mongoose.default.Types.ObjectId(supplierId)
+      } catch {
+        filter.supplierId = supplierId
+      }
+    }
+
+    const products = await Product.find(filter)
+      .select('_id name quantity supplierId')
+      .populate('supplierId', 'name')
       .sort({ name: 1 })
       .lean()
 

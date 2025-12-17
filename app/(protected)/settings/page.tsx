@@ -1,30 +1,51 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import connectDB from '@/lib/db'
+import User from '@/lib/models/User'
+import { ProfileForm } from './components/profile-form'
+import { PasswordForm } from './components/password-form'
 import { Settings } from 'lucide-react'
 
 export default async function SettingsPage() {
+  const session = await getServerSession(authOptions)
+
+  if (!session?.user?.id) {
+    return null
+  }
+
+  await connectDB()
+
+  const user = await User.findById(session.user.id as any).lean()
+
+  if (!user) {
+    return null
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Configurações</h1>
-        <p className="text-muted-foreground">Gerencie suas preferências</p>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Settings className="h-8 w-8" />
+          Configurações
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Gerencie suas preferências e informações da conta
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Em breve
-          </CardTitle>
-          <CardDescription>
-            Mais opções de configuração estarão disponíveis em breve
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Aqui você poderá configurar notificações, preferências de exibição e muito mais.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <ProfileForm 
+          user={{
+            name: user.name,
+            email: user.email,
+            cnpj: user.cnpj,
+            companyName: user.companyName,
+            tradeName: user.tradeName,
+          }}
+        />
+        
+        <PasswordForm />
+      </div>
     </div>
   )
 }

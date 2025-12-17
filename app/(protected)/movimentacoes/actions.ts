@@ -21,12 +21,22 @@ export async function createMovement(formData: FormData) {
     const priceStr = formData.get('price') as string
     const price = priceStr ? Number(priceStr.replace(/[^\d,.-]/g, '').replace(',', '.')) : undefined
 
+    const salePriceStr = formData.get('salePrice') as string
+    const salePrice = salePriceStr ? Number(salePriceStr.replace(/[^\d,.-]/g, '').replace(',', '.')) : undefined
+
+    const discountType = formData.get('discountType') as 'percent' | 'fixed' | null
+    const discountValueStr = formData.get('discountValue') as string
+    const discountValue = discountValueStr ? Number(discountValueStr.replace(/[^\d,.-]/g, '').replace(',', '.')) : undefined
+
     const data = {
       productId: formData.get('productId') as string,
       supplierId: formData.get('supplierId') as string || undefined,
       type: formData.get('type') as 'entrada' | 'saida' | 'ajuste',
       quantity: Number(formData.get('quantity')),
       price: price,
+      salePrice: salePrice,
+      discountType: discountType || undefined,
+      discountValue: discountValue,
       notes: formData.get('notes') as string || undefined,
     }
 
@@ -62,9 +72,27 @@ export async function createMovement(formData: FormData) {
       { quantity: newQuantity }
     )
 
+    // Calcula totalPrice para entrada
     const totalPrice = validatedData.price && validatedData.quantity 
       ? validatedData.price * validatedData.quantity 
       : undefined
+
+    // Calcula totalRevenue para saída (com desconto aplicado)
+    let totalRevenue: number | undefined = undefined
+    if (validatedData.type === 'saida' && validatedData.salePrice && validatedData.quantity) {
+      const subtotal = validatedData.salePrice * validatedData.quantity
+      let discount = 0
+      
+      if (validatedData.discountType && validatedData.discountValue !== undefined) {
+        if (validatedData.discountType === 'percent') {
+          discount = subtotal * (validatedData.discountValue / 100)
+        } else {
+          discount = validatedData.discountValue
+        }
+      }
+      
+      totalRevenue = Math.max(0, subtotal - discount)
+    }
 
     await Movement.create({
       userId: session.user.id as any,
@@ -76,6 +104,10 @@ export async function createMovement(formData: FormData) {
       newQuantity,
       price: validatedData.price,
       totalPrice: totalPrice,
+      salePrice: validatedData.salePrice,
+      discountType: validatedData.discountType,
+      discountValue: validatedData.discountValue,
+      totalRevenue: totalRevenue,
       notes: validatedData.notes,
     })
 

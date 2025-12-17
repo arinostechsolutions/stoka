@@ -10,8 +10,12 @@ export interface IMovement extends Document {
   quantity: number
   previousQuantity: number
   newQuantity: number
-  price?: number // Preço unitário na movimentação
-  totalPrice?: number // Preço total (quantity * price)
+  price?: number // Preço unitário na movimentação (entrada)
+  totalPrice?: number // Preço total (quantity * price) para entrada
+  salePrice?: number // Preço unitário de venda (saída)
+  discountType?: 'percent' | 'fixed' // Tipo de desconto
+  discountValue?: number // Valor do desconto (percentual ou fixo)
+  totalRevenue?: number // Receita total após desconto (quantity * salePrice - discount)
   notes?: string
   createdAt: Date
 }
@@ -61,6 +65,22 @@ const MovementSchema = new Schema<IMovement>(
     totalPrice: {
       type: Number,
       min: [0, 'Preço total não pode ser negativo'],
+    },
+    salePrice: {
+      type: Number,
+      min: [0, 'Preço de venda não pode ser negativo'],
+    },
+    discountType: {
+      type: String,
+      enum: ['percent', 'fixed'],
+    },
+    discountValue: {
+      type: Number,
+      min: [0, 'Valor do desconto não pode ser negativo'],
+    },
+    totalRevenue: {
+      type: Number,
+      min: [0, 'Receita total não pode ser negativa'],
     },
     notes: {
       type: String,

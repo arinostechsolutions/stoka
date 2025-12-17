@@ -9,6 +9,10 @@ export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12)
 }
 
+export async function comparePassword(password: string, hashedPassword: string): Promise<boolean> {
+  return bcrypt.compare(password, hashedPassword)
+}
+
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   providers: [

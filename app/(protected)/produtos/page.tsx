@@ -2,13 +2,14 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import connectDB from '@/lib/db'
 import Product from '@/lib/models/Product'
+import Supplier from '@/lib/models/Supplier'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Package } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { ProductForm } from './components/product-form'
-import { ProductCard } from './components/product-card'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { ProductsListClient } from './components/products-list-client'
 
 async function ProductsList() {
   const session = await getServerSession(authOptions)
@@ -21,30 +22,16 @@ async function ProductsList() {
     .sort({ name: 1 })
     .lean()
 
-  if (products.length === 0) {
-    return (
-      <div className="py-12 text-center">
-        <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-semibold">Nenhum produto cadastrado</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Comece adicionando seu primeiro produto
-        </p>
-        <ProductForm>
-          <Button className="mt-4" size="lg">
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Produto
-          </Button>
-        </ProductForm>
-      </div>
-    )
-  }
+  const suppliers = await Supplier.find({ userId: userId as any })
+    .select('_id name')
+    .sort({ name: 1 })
+    .lean()
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {products.map((product: any) => (
-        <ProductCard key={product._id.toString()} product={product} />
-      ))}
-    </div>
+    <ProductsListClient 
+      initialProducts={products} 
+      suppliers={suppliers}
+    />
   )
 }
 

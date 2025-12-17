@@ -132,7 +132,54 @@ export async function updateProduct(id: string, formData: FormData) {
     const updateData: any = {}
     const unsetData: any = {}
 
+    // Verifica se o fornecedor é de vestuário
+    const supplierId = formData.get('supplierId') as string
+    let isVestuarioSupplier = false
+    if (supplierId) {
+      const mongoose = await import('mongoose')
+      const Supplier = (await import('@/lib/models/Supplier')).default
+      const supplier = await Supplier.findOne({ 
+        _id: new mongoose.default.Types.ObjectId(supplierId),
+        userId: session.user.id as any,
+      }).lean()
+      isVestuarioSupplier = supplier?.category === 'vestuario'
+    }
+
+    // Processa campos de vestuário
+    const size = formData.get('size') as string | null
+    const color = formData.get('color') as string | null
+    const brand = formData.get('brand') as string | null
+    const material = formData.get('material') as string | null
+
+    // Campos de vestuário: só atualiza se fornecedor for de vestuário
+    if (isVestuarioSupplier) {
+      // Se fornecedor é de vestuário, salva os valores (mesmo que vazios, mantém como string vazia)
+      if (size !== null) {
+        updateData.size = size.trim() || ''
+      }
+      if (color !== null) {
+        updateData.color = color.trim() || ''
+      }
+      if (brand !== null) {
+        updateData.brand = brand.trim() || ''
+      }
+      if (material !== null) {
+        updateData.material = material.trim() || ''
+      }
+    } else {
+      // Se fornecedor não é de vestuário, remove os campos
+      unsetData.size = ''
+      unsetData.color = ''
+      unsetData.brand = ''
+      unsetData.material = ''
+    }
+
+    // Processa outros campos
     Object.keys(validatedData).forEach(key => {
+      // Pula campos de vestuário que já foram processados
+      if (['size', 'color', 'brand', 'material'].includes(key)) {
+        return
+      }
       const value = validatedData[key as keyof typeof validatedData]
       if (value !== undefined) {
         updateData[key] = value

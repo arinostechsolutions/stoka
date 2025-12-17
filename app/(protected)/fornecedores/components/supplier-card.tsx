@@ -12,6 +12,7 @@ interface SupplierCardProps {
   supplier: {
     _id: string
     name: string
+    category?: 'geral' | 'vestuario'
     cnpj?: string
     email?: string
     phone?: string
@@ -77,6 +78,7 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
             supplier={{
               _id: supplier._id,
               name: supplier.name,
+              category: supplier.category,
               cnpj: supplier.cnpj,
               email: supplier.email,
               phone: supplier.phone,

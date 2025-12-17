@@ -33,7 +33,7 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
 const DialogContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { onClose?: () => void }
->(({ className, onClose, children, ...props }, ref) => (
+>(({ className, onClose, children, onDrag, onDragStart, onDragEnd, onAnimationStart, onAnimationEnd, ...props }, ref) => (
   <motion.div
     ref={ref}
     initial={{ opacity: 0, scale: 0.96, y: 10 }}

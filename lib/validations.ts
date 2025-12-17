@@ -33,6 +33,9 @@ export const movementSchema = z.object({
   type: z.enum(['entrada', 'saida', 'ajuste']),
   quantity: z.number().min(0, 'Quantidade não pode ser negativa'),
   price: z.number().min(0, 'Preço não pode ser negativo').optional(),
+  salePrice: z.number().min(0, 'Preço de venda não pode ser negativo').optional(),
+  discountType: z.enum(['percent', 'fixed']).optional(),
+  discountValue: z.number().min(0, 'Valor do desconto não pode ser negativo').optional(),
   notes: z.string().optional(),
 })
 
