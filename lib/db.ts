@@ -27,6 +27,13 @@ async function connectDB() {
   }
 
   if (!cached.promise) {
+    // Remove espaços e valida a string de conexão
+    const uri = MONGODB_URI.trim()
+    
+    if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
+      throw new Error('MONGODB_URI deve começar com "mongodb://" ou "mongodb+srv://"')
+    }
+
     const opts = {
       bufferCommands: false,
       maxPoolSize: 10, // Mantém até 10 conexões no pool
@@ -35,11 +42,12 @@ async function connectDB() {
       family: 4, // Usa IPv4, evita delay de IPv6
     }
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(uri, opts).then((mongoose) => {
       return mongoose
     }).catch((error) => {
       cached.promise = null
       console.error('Erro ao conectar com MongoDB:', error.message)
+      console.error('URI usado:', uri.replace(/:[^:@]+@/, ':****@')) // Não loga a senha
       throw error
     })
   }
