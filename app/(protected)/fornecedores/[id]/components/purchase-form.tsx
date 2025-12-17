@@ -190,17 +190,17 @@ export function PurchaseForm({ children, supplierId }: PurchaseFormProps) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
                 disabled={isPending}
-                className="h-11"
+                className="h-11 w-full sm:w-auto"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isPending} className="h-11 min-w-[120px]">
+              <Button type="submit" disabled={isPending} className="h-11 w-full sm:w-auto sm:min-w-[120px]">
                 {isPending ? (
                   <span className="flex items-center gap-2">
                     <motion.div

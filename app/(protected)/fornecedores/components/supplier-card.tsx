@@ -63,7 +63,7 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
         </div>
 
         {/* Ações */}
-        <div className="pt-3 border-t flex gap-2">
+        <div className="pt-3 border-t flex flex-col sm:flex-row gap-2">
           <Link 
             href={`/fornecedores/${supplier._id}`}
             className="flex-1"
@@ -74,24 +74,27 @@ export function SupplierCard({ supplier }: SupplierCardProps) {
             </Button>
           </Link>
           
-          <SupplierForm
-            supplier={{
-              _id: supplier._id,
-              name: supplier.name,
-              category: supplier.category,
-              cnpj: supplier.cnpj,
-              email: supplier.email,
-              phone: supplier.phone,
-              address: supplier.address,
-              notes: supplier.notes,
-            }}
-          >
-            <Button variant="outline" size="sm" className="px-3">
-              <Edit className="h-4 w-4" />
-            </Button>
-          </SupplierForm>
+          <div className="flex gap-2">
+            <SupplierForm
+              supplier={{
+                _id: supplier._id,
+                name: supplier.name,
+                category: supplier.category,
+                cnpj: supplier.cnpj,
+                email: supplier.email,
+                phone: supplier.phone,
+                address: supplier.address,
+                notes: supplier.notes,
+              }}
+            >
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-initial sm:px-3">
+                <Edit className="h-4 w-4 sm:mr-0 md:mr-0" />
+                <span className="ml-2 sm:hidden">Editar</span>
+              </Button>
+            </SupplierForm>
 
-          <DeleteSupplierButton supplierId={supplier._id} />
+            <DeleteSupplierButton supplierId={supplier._id} />
+          </div>
         </div>
       </CardContent>
     </Card>

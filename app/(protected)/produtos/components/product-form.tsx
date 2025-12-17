@@ -202,7 +202,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
                     <h3 className="font-semibold text-purple-900">Informações de Vestuário</h3>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="size" className="text-sm font-semibold flex items-center gap-2">
                         <Ruler className="h-4 w-4" />
@@ -233,7 +233,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="brand" className="text-sm font-semibold flex items-center gap-2">
                         <Award className="h-4 w-4" />
@@ -281,7 +281,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku" className="text-sm font-semibold flex items-center gap-2">
                     <Hash className="h-4 w-4" />
@@ -310,7 +310,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border">
                 <div className="space-y-2">
                   <Label htmlFor="quantity" className="text-sm font-semibold flex items-center gap-2">
                     <Box className="h-4 w-4" />
@@ -343,7 +343,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="purchasePrice" className="text-sm font-semibold flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />

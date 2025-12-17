@@ -1,61 +1,43 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, ArrowLeftRight, Settings, LogOut, Building2, BarChart3 } from 'lucide-react'
-import { signOut } from 'next-auth/react'
+import { useState } from 'react'
+import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Produtos', href: '/produtos', icon: Package },
-  { name: 'Fornecedores', href: '/fornecedores', icon: Building2 },
-  { name: 'Movimentações', href: '/movimentacoes', icon: ArrowLeftRight },
-  { name: 'Relatórios', href: '/relatorios', icon: BarChart3 },
-  { name: 'Configurações', href: '/settings', icon: Settings },
-]
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { SidebarContent } from './sidebar-content'
 
 export function Sidebar() {
-  const pathname = usePathname()
+  const [open, setOpen] = useState(false)
 
   return (
-    <div className="flex h-screen w-64 flex-col border-r bg-card">
-      <div className="flex h-16 items-center border-b px-6">
+    <>
+      {/* Desktop Sidebar - sempre visível */}
+      <aside className="hidden md:flex h-screen w-64 flex-col border-r bg-card">
+        <SidebarContent showLogo={true} />
+      </aside>
+
+      {/* Mobile Header com Logo e Botão Hamburger */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-[60] flex items-center gap-3 h-16 px-4 bg-card border-b">
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="bg-background shadow-sm shrink-0"
+            >
+              <Menu className="h-6 w-6" />
+              <span className="sr-only">Abrir menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 p-0 [&>button]:hidden">
+            <div className="flex h-full w-full flex-col bg-card">
+              <SidebarContent showLogo={false} onLinkClick={() => setOpen(false)} />
+            </div>
+          </SheetContent>
+        </Sheet>
         <h1 className="text-xl font-bold">Stoka</h1>
       </div>
-      <nav className="flex-1 space-y-1 p-4">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {item.name}
-            </Link>
-          )
-        })}
-      </nav>
-      <div className="border-t p-4">
-        <Button
-          variant="ghost"
-          className="w-full justify-start"
-          onClick={() => signOut({ callbackUrl: '/login' })}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Sair
-        </Button>
-      </div>
-    </div>
+    </>
   )
 }
 

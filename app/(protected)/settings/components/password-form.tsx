@@ -56,11 +56,11 @@ export function PasswordForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Lock className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+          <Lock className="h-4 w-4 md:h-5 md:w-5" />
           Alterar Senha
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs md:text-sm">
           Altere sua senha de acesso
         </CardDescription>
       </CardHeader>
@@ -190,7 +190,7 @@ export function PasswordForm() {
             <Button 
               type="submit" 
               disabled={isPending || !hasAllFields || newPassword !== confirmPassword || newPassword.length < 6}
-              className="h-11 min-w-[120px]"
+              className="h-11 w-full sm:w-auto sm:min-w-[120px]"
             >
               {isPending ? (
                 <span className="flex items-center gap-2">

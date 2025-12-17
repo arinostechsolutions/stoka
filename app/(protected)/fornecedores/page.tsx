@@ -29,14 +29,14 @@ async function SuppliersList() {
 
 export default async function FornecedoresPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Fornecedores</h1>
-          <p className="text-muted-foreground">Gerencie seus fornecedores</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Fornecedores</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Gerencie seus fornecedores</p>
         </div>
         <SupplierForm>
-          <Button size="lg">
+          <Button size="lg" className="w-full md:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Adicionar Fornecedor
           </Button>

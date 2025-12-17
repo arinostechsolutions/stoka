@@ -102,9 +102,9 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
       {/* Filtros e Visualização */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+              <Filter className="h-4 w-4 md:h-5 md:w-5" />
               Filtros e Visualização
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -112,17 +112,19 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                 variant={viewMode === 'cards' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('cards')}
+                className="flex-1 md:flex-initial"
               >
-                <Grid3x3 className="h-4 w-4 mr-2" />
-                Cards
+                <Grid3x3 className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Cards</span>
               </Button>
               <Button
                 variant={viewMode === 'list' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('list')}
+                className="flex-1 md:flex-initial"
               >
-                <List className="h-4 w-4 mr-2" />
-                Lista
+                <List className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Lista</span>
               </Button>
             </div>
           </div>
@@ -178,11 +180,11 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <Button variant="outline" onClick={handleResetFilters}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <Button variant="outline" onClick={handleResetFilters} className="w-full md:w-auto">
               Limpar Filtros
             </Button>
-            <div className="text-sm text-muted-foreground flex items-center">
+            <div className="text-sm text-muted-foreground text-center md:text-right">
               {filteredProducts.length} de {initialProducts.length} produtos
             </div>
           </div>
@@ -201,7 +203,7 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
       ) : (
         <>
           {viewMode === 'cards' ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {paginatedProducts.map((product: any) => (
                 <ProductCard key={product._id.toString()} product={product} />
               ))}
@@ -210,11 +212,11 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
             <div className="space-y-2">
               {paginatedProducts.map((product: any) => (
                 <Card key={product._id.toString()} className="group hover:shadow-md transition-shadow">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between gap-4">
+                  <CardContent className="pt-4 md:pt-6">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-lg">{product.name}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <p className="font-medium text-base md:text-lg">{product.name}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
                           {product.sku && (
                             <>
                               <span>SKU: {product.sku}</span>
@@ -235,12 +237,12 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                           {product.supplierId && (
                             <>
                               <span>•</span>
-                              <span>Fornecedor: {product.supplierId.name}</span>
+                              <span className="break-all">Fornecedor: {product.supplierId.name}</span>
                             </>
                           )}
                         </div>
                         {(product.purchasePrice || product.salePrice) && (
-                          <div className="mt-2 flex items-center gap-4 text-sm">
+                          <div className="mt-2 flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm">
                             {product.purchasePrice && (
                               <span className="text-muted-foreground">
                                 Compra: <span className="font-semibold text-green-600">{formatCurrency(product.purchasePrice)}</span>
@@ -254,7 +256,7 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0">
                         <ProductForm 
                           product={{
                             _id: product._id.toString(),
@@ -272,9 +274,9 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                             material: product.material,
                           }}
                         >
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
+                          <Button variant="outline" size="sm" className="flex-1 md:flex-initial">
+                            <Edit className="h-4 w-4 md:mr-2" />
+                            <span className="hidden md:inline">Editar</span>
                           </Button>
                         </ProductForm>
                         <DeleteProductButton productId={product._id.toString()} />
@@ -288,19 +290,20 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
 
           {/* Paginação */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t">
+              <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
                 Mostrando {startIndex + 1} a {Math.min(endIndex, filteredProducts.length)} de {filteredProducts.length} produtos
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
+                  className="flex-1 md:flex-initial"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  Anterior
+                  <ChevronLeft className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Anterior</span>
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -320,7 +323,7 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                         variant={currentPage === pageNum ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
-                        className="min-w-[40px]"
+                        className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
                       >
                         {pageNum}
                       </Button>
@@ -332,9 +335,10 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
+                  className="flex-1 md:flex-initial"
                 >
-                  Próxima
-                  <ChevronRight className="h-4 w-4" />
+                  <span className="hidden md:inline">Próxima</span>
+                  <ChevronRight className="h-4 w-4 md:ml-1" />
                 </Button>
               </div>
             </div>

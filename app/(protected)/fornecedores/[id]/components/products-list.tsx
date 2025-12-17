@@ -32,13 +32,13 @@ export async function ProductsList({ supplierId }: { supplierId: string }) {
       {products.map((product: any) => (
         <Link key={product._id.toString()} href={`/produtos/${product._id}`}>
           <Card className="transition-shadow hover:shadow-md">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Package className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-muted-foreground">
+            <CardContent className="pt-4 md:pt-6">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                  <Package className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm md:text-base truncate">{product.name}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">
                       Estoque: {product.quantity}
                     </p>
                   </div>

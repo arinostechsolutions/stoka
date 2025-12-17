@@ -198,7 +198,7 @@ export function SupplierForm({ children, supplier }: SupplierFormProps) {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-semibold flex items-center gap-2">
                     <Mail className="h-4 w-4" />
@@ -260,17 +260,17 @@ export function SupplierForm({ children, supplier }: SupplierFormProps) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
                 disabled={isPending}
-                className="h-11"
+                className="h-11 w-full sm:w-auto"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isPending || !!cnpjError} className="h-11 min-w-[120px]">
+              <Button type="submit" disabled={isPending || !!cnpjError} className="h-11 w-full sm:w-auto sm:min-w-[120px]">
                 {isPending ? (
                   <span className="flex items-center gap-2">
                     <motion.div

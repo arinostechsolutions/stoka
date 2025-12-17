@@ -171,7 +171,7 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Ações */}
-        <div className="pt-3 border-t flex gap-2">
+        <div className="pt-3 border-t flex flex-col sm:flex-row gap-2">
           <Link 
             href={`/produtos/${product._id}`}
             className="flex-1"
@@ -182,29 +182,32 @@ export function ProductCard({ product }: ProductCardProps) {
             </Button>
           </Link>
           
-          <ProductForm
-            product={{
-              _id: product._id,
-              name: product.name,
-              sku: product.sku,
-              category: product.category,
-              supplierId: product.supplierId?._id,
-              quantity: product.quantity,
-              minQuantity: product.minQuantity,
-              purchasePrice: product.purchasePrice,
-              salePrice: product.salePrice,
-              size: product.size,
-              color: product.color,
-              brand: product.brand,
-              material: product.material,
-            }}
-          >
-            <Button variant="outline" size="sm" className="px-3">
-              <Edit className="h-4 w-4" />
-            </Button>
-          </ProductForm>
+          <div className="flex gap-2">
+            <ProductForm
+              product={{
+                _id: product._id,
+                name: product.name,
+                sku: product.sku,
+                category: product.category,
+                supplierId: product.supplierId?._id,
+                quantity: product.quantity,
+                minQuantity: product.minQuantity,
+                purchasePrice: product.purchasePrice,
+                salePrice: product.salePrice,
+                size: product.size,
+                color: product.color,
+                brand: product.brand,
+                material: product.material,
+              }}
+            >
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-initial sm:px-3">
+                <Edit className="h-4 w-4 sm:mr-0 md:mr-0" />
+                <span className="ml-2 sm:hidden">Editar</span>
+              </Button>
+            </ProductForm>
 
-          <DeleteProductButton productId={product._id} />
+            <DeleteProductButton productId={product._id} />
+          </div>
         </div>
       </CardContent>
     </Card>

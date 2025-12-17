@@ -126,8 +126,8 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
       {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+            <Filter className="h-4 w-4 md:h-5 md:w-5" />
             Filtros
           </CardTitle>
         </CardHeader>
@@ -236,11 +236,11 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <Button variant="outline" onClick={handleResetFilters}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <Button variant="outline" onClick={handleResetFilters} className="w-full md:w-auto">
               Limpar Filtros
             </Button>
-            <div className="text-sm text-muted-foreground flex items-center">
+            <div className="text-sm text-muted-foreground text-center md:text-right">
               {filteredMovements.length} de {initialMovements.length} movimentações
             </div>
           </div>
@@ -261,13 +261,13 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
           <div className="space-y-2">
             {paginatedMovements.map((movement: any) => (
             <Card key={movement._id.toString()}>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="font-medium">
+              <CardContent className="pt-4 md:pt-6">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-base md:text-lg">
                       {movement.productId?.name || 'Produto removido'}
                     </p>
-                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
                       <span>
                         {movement.type === 'entrada' && '➕ Entrada'}
                         {movement.type === 'saida' && '➖ Saída'}
@@ -282,17 +282,17 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
                       {movement.supplierId && (
                         <>
                           <span>•</span>
-                          <span>Fornecedor: {movement.supplierId?.name}</span>
+                          <span className="break-all">Fornecedor: {movement.supplierId?.name}</span>
                         </>
                       )}
                     </div>
                     {movement.notes && (
-                      <p className="mt-1 text-sm text-muted-foreground">
+                      <p className="mt-1 text-xs md:text-sm text-muted-foreground break-words">
                         {movement.notes}
                       </p>
                     )}
                     {movement.type === 'saida' && movement.salePrice && (
-                      <div className="mt-2 flex items-center gap-4 text-sm">
+                      <div className="mt-2 flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm">
                         <span className="text-muted-foreground">
                           Preço de venda: <span className="font-semibold text-green-600">{formatCurrency(movement.salePrice)}</span>
                         </span>
@@ -320,14 +320,14 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
                       </div>
                     )}
                     {movement.type === 'entrada' && movement.totalPrice && (
-                      <div className="mt-2 text-sm">
+                      <div className="mt-2 text-xs md:text-sm">
                         <span className="text-muted-foreground">
                           Total gasto: <span className="font-semibold text-red-600">{formatCurrency(movement.totalPrice)}</span>
                         </span>
                       </div>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs md:text-sm text-muted-foreground shrink-0">
                     {formatDate(movement.createdAt)}
                   </p>
                 </div>
@@ -338,19 +338,20 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
 
           {/* Paginação */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t">
+              <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
                 Mostrando {startIndex + 1} a {Math.min(endIndex, filteredMovements.length)} de {filteredMovements.length} movimentações
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
+                  className="flex-1 md:flex-initial"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  Anterior
+                  <ChevronLeft className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Anterior</span>
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -370,7 +371,7 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
                         variant={currentPage === pageNum ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
-                        className="min-w-[40px]"
+                        className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
                       >
                         {pageNum}
                       </Button>
@@ -382,9 +383,10 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
+                  className="flex-1 md:flex-initial"
                 >
-                  Próxima
-                  <ChevronRight className="h-4 w-4" />
+                  <span className="hidden md:inline">Próxima</span>
+                  <ChevronRight className="h-4 w-4 md:ml-1" />
                 </Button>
               </div>
             </div>

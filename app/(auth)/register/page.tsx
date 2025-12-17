@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -51,7 +52,17 @@ export default function RegisterPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Criar conta</CardTitle>
+        <div className="flex items-center justify-center mb-4">
+          <Image
+            src="/stoka-logo.png"
+            alt="Stoka Logo"
+            width={200}
+            height={120}
+            className="h-16 w-auto"
+            style={{ objectFit: 'contain' }}
+          />
+        </div>
+        <CardTitle className="text-2xl font-bold text-center">Criar conta</CardTitle>
         <CardDescription>Comece a controlar seu estoque agora</CardDescription>
       </CardHeader>
       <CardContent>

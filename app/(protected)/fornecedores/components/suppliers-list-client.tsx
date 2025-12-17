@@ -86,9 +86,9 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
       {/* Filtros e Visualização */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+              <Filter className="h-4 w-4 md:h-5 md:w-5" />
               Filtros e Visualização
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -96,17 +96,19 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
                 variant={viewMode === 'cards' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('cards')}
+                className="flex-1 md:flex-initial"
               >
-                <Grid3x3 className="h-4 w-4 mr-2" />
-                Cards
+                <Grid3x3 className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Cards</span>
               </Button>
               <Button
                 variant={viewMode === 'list' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('list')}
+                className="flex-1 md:flex-initial"
               >
-                <List className="h-4 w-4 mr-2" />
-                Lista
+                <List className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Lista</span>
               </Button>
             </div>
           </div>
@@ -163,11 +165,11 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <Button variant="outline" onClick={handleResetFilters}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <Button variant="outline" onClick={handleResetFilters} className="w-full md:w-auto">
               Limpar Filtros
             </Button>
-            <div className="text-sm text-muted-foreground flex items-center">
+            <div className="text-sm text-muted-foreground text-center md:text-right">
               {filteredSuppliers.length} de {initialSuppliers.length} fornecedores
             </div>
           </div>
@@ -186,7 +188,7 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
       ) : (
         <>
           {viewMode === 'cards' ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {paginatedSuppliers.map((supplier: any) => (
                 <SupplierCard key={supplier._id.toString()} supplier={supplier} />
               ))}
@@ -195,11 +197,11 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
             <div className="space-y-2">
               {paginatedSuppliers.map((supplier: any) => (
                 <Card key={supplier._id.toString()} className="group hover:shadow-md transition-shadow">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between gap-4">
+                  <CardContent className="pt-4 md:pt-6">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-lg">{supplier.name}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <p className="font-medium text-base md:text-lg">{supplier.name}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
                           {supplier.category && (
                             <>
                               <span className="capitalize">
@@ -210,34 +212,34 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
                           )}
                           {supplier.cnpj && (
                             <>
-                              <span>CNPJ: {formatCNPJ(supplier.cnpj)}</span>
+                              <span className="break-all">CNPJ: {formatCNPJ(supplier.cnpj)}</span>
                               <span>•</span>
                             </>
                           )}
                           {supplier.email && (
                             <>
-                              <span>Email: {supplier.email}</span>
+                              <span className="break-all">Email: {supplier.email}</span>
                               <span>•</span>
                             </>
                           )}
                           {supplier.phone && (
                             <>
-                              <span>Telefone: {formatPhone(supplier.phone)}</span>
+                              <span>Tel: {formatPhone(supplier.phone)}</span>
                             </>
                           )}
                         </div>
                         {supplier.address && (
-                          <div className="mt-2 text-sm text-muted-foreground">
+                          <div className="mt-2 text-xs md:text-sm text-muted-foreground">
                             <span>Endereço: {supplier.address}</span>
                           </div>
                         )}
                         {supplier.notes && (
-                          <div className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                          <div className="mt-2 text-xs md:text-sm text-muted-foreground line-clamp-2">
                             <span>Observações: {supplier.notes}</span>
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0">
                         <SupplierForm 
                           supplier={{
                             _id: supplier._id.toString(),
@@ -250,9 +252,9 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
                             notes: supplier.notes,
                           }}
                         >
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
+                          <Button variant="outline" size="sm" className="flex-1 md:flex-initial">
+                            <Edit className="h-4 w-4 md:mr-2" />
+                            <span className="hidden md:inline">Editar</span>
                           </Button>
                         </SupplierForm>
                         <DeleteSupplierButton supplierId={supplier._id.toString()} />
@@ -266,19 +268,20 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
 
           {/* Paginação */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t">
+              <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
                 Mostrando {startIndex + 1} a {Math.min(endIndex, filteredSuppliers.length)} de {filteredSuppliers.length} fornecedores
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
+                  className="flex-1 md:flex-initial"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  Anterior
+                  <ChevronLeft className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Anterior</span>
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -298,7 +301,7 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
                         variant={currentPage === pageNum ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
-                        className="min-w-[40px]"
+                        className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
                       >
                         {pageNum}
                       </Button>
@@ -310,9 +313,10 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
                   size="sm"
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
+                  className="flex-1 md:flex-initial"
                 >
-                  Próxima
-                  <ChevronRight className="h-4 w-4" />
+                  <span className="hidden md:inline">Próxima</span>
+                  <ChevronRight className="h-4 w-4 md:ml-1" />
                 </Button>
               </div>
             </div>

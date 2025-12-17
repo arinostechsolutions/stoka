@@ -30,7 +30,7 @@ export function DeleteProductButton({ productId }: { productId: string }) {
 
   return (
     <>
-      <Button variant="destructive" size="sm" className="px-3" onClick={() => setOpen(true)}>
+      <Button variant="destructive" size="sm" className="px-3 shrink-0" onClick={() => setOpen(true)}>
         <Trash2 className="h-4 w-4" />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -42,11 +42,11 @@ export function DeleteProductButton({ productId }: { productId: string }) {
               movimentações serão removidos permanentemente.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
+            <Button variant="destructive" onClick={handleDelete} disabled={isPending} className="w-full sm:w-auto">
               {isPending ? 'Excluindo...' : 'Excluir'}
             </Button>
           </div>

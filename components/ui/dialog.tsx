@@ -15,7 +15,7 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pt-20 md:pt-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
@@ -23,7 +23,7 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
       />
       
       {/* Content */}
-      <div className="relative z-50 w-full max-w-2xl">
+      <div className="relative z-[70] w-full max-w-2xl">
         {children}
       </div>
     </div>

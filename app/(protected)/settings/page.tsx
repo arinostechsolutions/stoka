@@ -22,18 +22,18 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Settings className="h-8 w-8" />
+        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+          <Settings className="h-6 w-6 md:h-8 md:w-8 shrink-0" />
           Configurações
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-sm md:text-base text-muted-foreground mt-2">
           Gerencie suas preferências e informações da conta
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <ProfileForm 
           user={{
             name: user.name,
