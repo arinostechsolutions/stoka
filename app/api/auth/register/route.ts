@@ -12,8 +12,20 @@ export async function POST(request: Request) {
     const validatedData = registerSchema.parse(body)
     console.log('Dados validados:', { name: validatedData.name, email: validatedData.email })
 
-    await connectDB()
-    console.log('MongoDB conectado')
+    try {
+      await connectDB()
+      console.log('MongoDB conectado')
+    } catch (dbError: any) {
+      console.error('Erro ao conectar com MongoDB:', dbError.message)
+      console.error('Stack:', dbError.stack)
+      return NextResponse.json(
+        { 
+          error: 'Erro ao conectar com o banco de dados',
+          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+        },
+        { status: 500 }
+      )
+    }
 
     const emailToCheck = validatedData.email.toLowerCase().trim()
     const existingUser = await User.findOne({ email: emailToCheck })
@@ -67,6 +79,14 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    // Log completo do erro para debug
+    console.error('Erro completo:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    })
 
     return NextResponse.json(
       { 
