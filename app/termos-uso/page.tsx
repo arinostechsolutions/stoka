@@ -86,7 +86,7 @@ export default function TermosUsoPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">8. Limitação de Responsabilidade</h2>
             <p className="mb-4">
-              O Stoka é fornecido "como está" e "conforme disponível". Não garantimos que o serviço atenderá aos seus requisitos específicos ou estará livre de erros. Em nenhuma circunstância seremos responsáveis por danos diretos, indiretos, incidentais ou consequenciais resultantes do uso ou incapacidade de usar o serviço.
+              O Stoka é fornecido &quot;como está&quot; e &quot;conforme disponível&quot;. Não garantimos que o serviço atenderá aos seus requisitos específicos ou estará livre de erros. Em nenhuma circunstância seremos responsáveis por danos diretos, indiretos, incidentais ou consequenciais resultantes do uso ou incapacidade de usar o serviço.
             </p>
           </section>
 
