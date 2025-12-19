@@ -306,7 +306,13 @@ export function MovementForm({ children, productId }: MovementFormProps) {
                         }
                         displayValue={
                           selectedProduct
-                            ? products.find((p: any) => p._id === selectedProduct)?.name || ''
+                            ? (() => {
+                                const product = products.find((p: any) => p._id === selectedProduct)
+                                if (!product) return ''
+                                return product.brand 
+                                  ? `${product.name} - ${product.brand}`
+                                  : product.name
+                              })()
                             : undefined
                         }
                       />
@@ -321,7 +327,10 @@ export function MovementForm({ children, productId }: MovementFormProps) {
                         ) : (
                         products.map((product: any) => (
                           <SelectItem key={product._id} value={product._id}>
-                            {product.name} ({product.quantity} em estoque)
+                            {product.brand 
+                              ? `${product.name} - ${product.brand} (${product.quantity} em estoque)`
+                              : `${product.name} (${product.quantity} em estoque)`
+                            }
                           </SelectItem>
                         ))
                       )}

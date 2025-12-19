@@ -29,7 +29,7 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
   const [endDate, setEndDate] = useState('')
   const [selectedSupplier, setSelectedSupplier] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = viewMode === 'cards' ? 12 : 20
+  const itemsPerPage = 6
 
   // Filtra produtos baseado no fornecedor selecionado
   const filteredProductsBySupplier = useMemo(() => {
@@ -55,10 +55,22 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
   }, [filteredProductsBySupplier, startDate, endDate])
 
   // Calcula paginação
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
+  
+  // Debug logs
+  console.log('=== PAGINAÇÃO DEBUG ===')
+  console.log('viewMode:', viewMode)
+  console.log('filteredProducts.length:', filteredProducts.length)
+  console.log('itemsPerPage:', itemsPerPage)
+  console.log('totalPages:', totalPages)
+  console.log('currentPage:', currentPage)
+  console.log('startIndex:', startIndex)
+  console.log('endIndex:', endIndex)
+  console.log('paginatedProducts.length:', paginatedProducts.length)
+  console.log('========================')
 
   // Reset para primeira página quando os filtros mudarem
   useEffect(() => {
@@ -209,90 +221,201 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
               ))}
             </div>
           ) : (
-            <div className="space-y-2">
-              {paginatedProducts.map((product: any) => (
-                <Card key={product._id.toString()} className="group hover:shadow-md transition-shadow">
-                  <CardContent className="pt-4 md:pt-6">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-base md:text-lg">{product.name}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
-                          {product.sku && (
-                            <>
-                              <span>SKU: {product.sku}</span>
-                              <span>•</span>
-                            </>
-                          )}
-                          {product.category && (
-                            <>
-                              <span>{product.category}</span>
-                              <span>•</span>
-                            </>
-                          )}
-                          <span className={product.quantity < product.minQuantity ? 'text-destructive font-semibold' : ''}>
-                            Estoque: {product.quantity}
-                          </span>
-                          <span>•</span>
-                          <span>Mínimo: {product.minQuantity}</span>
-                          {product.supplierId && (
-                            <>
-                              <span>•</span>
-                              <span className="break-all">Fornecedor: {product.supplierId.name}</span>
-                            </>
-                          )}
-                        </div>
-                        {(product.purchasePrice || product.salePrice) && (
-                          <div className="mt-2 flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm">
-                            {product.purchasePrice && (
-                              <span className="text-muted-foreground">
-                                Compra: <span className="font-semibold text-green-600">{formatCurrency(product.purchasePrice)}</span>
-                              </span>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                {paginatedProducts.map((product: any) => (
+                  <Card key={product._id.toString()} className="group hover:shadow-md transition-shadow">
+                    <CardContent className="pt-4 md:pt-6">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-base md:text-lg">{product.name}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                            {product.sku && (
+                              <>
+                                <span>SKU: {product.sku}</span>
+                                <span>•</span>
+                              </>
                             )}
-                            {product.salePrice && (
-                              <span className="text-muted-foreground">
-                                Venda: <span className="font-semibold text-blue-600">{formatCurrency(product.salePrice)}</span>
-                              </span>
+                            {product.category && (
+                              <>
+                                <span>{product.category}</span>
+                                <span>•</span>
+                              </>
+                            )}
+                            {product.brand && (
+                              <>
+                                <span>Marca: {product.brand}</span>
+                                <span>•</span>
+                              </>
+                            )}
+                            <span className={product.quantity < product.minQuantity ? 'text-destructive font-semibold' : ''}>
+                              Estoque: {product.quantity}
+                            </span>
+                            <span>•</span>
+                            <span>Mínimo: {product.minQuantity}</span>
+                            {product.supplierId && (
+                              <>
+                                <span>•</span>
+                                <span className="break-all">Fornecedor: {product.supplierId.name}</span>
+                              </>
                             )}
                           </div>
-                        )}
+                          {(product.purchasePrice || product.salePrice) && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm">
+                              {product.purchasePrice && (
+                                <span className="text-muted-foreground">
+                                  Compra: <span className="font-semibold text-green-600">{formatCurrency(product.purchasePrice)}</span>
+                                </span>
+                              )}
+                              {product.salePrice && (
+                                <span className="text-muted-foreground">
+                                  Venda: <span className="font-semibold text-blue-600">{formatCurrency(product.salePrice)}</span>
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0">
+                          <ProductForm 
+                            product={{
+                              _id: product._id.toString(),
+                              name: product.name,
+                              sku: product.sku,
+                              category: product.category,
+                              supplierId: product.supplierId?._id?.toString() || product.supplierId?.toString(),
+                              quantity: product.quantity,
+                              minQuantity: product.minQuantity,
+                              purchasePrice: product.purchasePrice,
+                              salePrice: product.salePrice,
+                              size: product.size,
+                              color: product.color,
+                              brand: product.brand,
+                              material: product.material,
+                            }}
+                          >
+                            <Button variant="outline" size="sm" className="flex-1 md:flex-initial">
+                              <Edit className="h-4 w-4 md:mr-2" />
+                              <span className="hidden md:inline">Editar</span>
+                            </Button>
+                          </ProductForm>
+                          <DeleteProductButton productId={product._id.toString()} />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0">
-                        <ProductForm 
-                          product={{
-                            _id: product._id.toString(),
-                            name: product.name,
-                            sku: product.sku,
-                            category: product.category,
-                            supplierId: product.supplierId?._id?.toString() || product.supplierId?.toString(),
-                            quantity: product.quantity,
-                            minQuantity: product.minQuantity,
-                            purchasePrice: product.purchasePrice,
-                            salePrice: product.salePrice,
-                            size: product.size,
-                            color: product.color,
-                            brand: product.brand,
-                            material: product.material,
-                          }}
-                        >
-                          <Button variant="outline" size="sm" className="flex-1 md:flex-initial">
-                            <Edit className="h-4 w-4 md:mr-2" />
-                            <span className="hidden md:inline">Editar</span>
-                          </Button>
-                        </ProductForm>
-                        <DeleteProductButton productId={product._id.toString()} />
-                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              
+              {/* Paginação para lista */}
+              {(() => {
+                console.log('=== RENDERIZAÇÃO PAGINAÇÃO LISTA ===')
+                console.log('viewMode:', viewMode)
+                console.log('viewMode === list:', viewMode === 'list')
+                console.log('totalPages:', totalPages)
+                console.log('totalPages > 1:', totalPages > 1)
+                console.log('Condição completa:', viewMode === 'list' && totalPages > 1)
+                console.log('filteredProducts.length:', filteredProducts.length)
+                console.log('itemsPerPage:', itemsPerPage)
+                return null
+              })()}
+              {viewMode === 'list' && totalPages > 1 && (
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t">
+                  <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
+                    {(() => {
+                      const produtosExibidos = Math.min(endIndex, filteredProducts.length)
+                      console.log('=== MENSAGEM PAGINAÇÃO LISTA ===')
+                      console.log('endIndex:', endIndex)
+                      console.log('filteredProducts.length:', filteredProducts.length)
+                      console.log('produtosExibidos:', produtosExibidos)
+                      console.log('currentPage:', currentPage)
+                      return `${produtosExibidos} de ${filteredProducts.length} produtos`
+                    })()}
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="flex-1 md:flex-initial"
+                    >
+                      <ChevronLeft className="h-4 w-4 md:mr-1" />
+                      <span className="hidden md:inline">Anterior</span>
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => {
+                        const pageNum = i + 1
+                        // Mostra todas as páginas se houver 7 ou menos, senão mostra uma janela
+                        if (totalPages <= 7) {
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => setCurrentPage(pageNum)}
+                              className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
+                            >
+                              {pageNum}
+                            </Button>
+                          )
+                        } else {
+                          // Mostra janela de páginas
+                          if (
+                            pageNum === 1 ||
+                            pageNum === totalPages ||
+                            (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                          ) {
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
+                              >
+                                {pageNum}
+                              </Button>
+                            )
+                          } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                            return (
+                              <span key={pageNum} className="px-2 text-muted-foreground">
+                                ...
+                              </span>
+                            )
+                          }
+                          return null
+                        }
+                      })}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="flex-1 md:flex-initial"
+                    >
+                      <span className="hidden md:inline">Próxima</span>
+                      <ChevronRight className="h-4 w-4 md:ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Paginação */}
-          {totalPages > 1 && (
+          {/* Paginação para cards */}
+          {viewMode === 'cards' && totalPages > 1 && (
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t">
               <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
-                Mostrando {startIndex + 1} a {Math.min(endIndex, filteredProducts.length)} de {filteredProducts.length} produtos
+                {(() => {
+                  const produtosExibidos = Math.min(endIndex, filteredProducts.length)
+                  console.log('=== MENSAGEM PAGINAÇÃO CARDS ===')
+                  console.log('endIndex:', endIndex)
+                  console.log('filteredProducts.length:', filteredProducts.length)
+                  console.log('produtosExibidos:', produtosExibidos)
+                  console.log('currentPage:', currentPage)
+                  return `${produtosExibidos} de ${filteredProducts.length} produtos`
+                })()}
               </div>
               <div className="flex items-center justify-center gap-2">
                 <Button
@@ -306,28 +429,48 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                   <span className="hidden md:inline">Anterior</span>
                 </Button>
                 <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum: number
-                    if (totalPages <= 5) {
-                      pageNum = i + 1
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i
+                  {Array.from({ length: totalPages }, (_, i) => {
+                    const pageNum = i + 1
+                    // Mostra todas as páginas se houver 7 ou menos, senão mostra uma janela
+                    if (totalPages <= 7) {
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
+                        >
+                          {pageNum}
+                        </Button>
+                      )
                     } else {
-                      pageNum = currentPage - 2 + i
+                      // Mostra janela de páginas
+                      if (
+                        pageNum === 1 ||
+                        pageNum === totalPages ||
+                        (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                      ) {
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
+                          >
+                            {pageNum}
+                          </Button>
+                        )
+                      } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                        return (
+                          <span key={pageNum} className="px-2 text-muted-foreground">
+                            ...
+                          </span>
+                        )
+                      }
+                      return null
                     }
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
-                      >
-                        {pageNum}
-                      </Button>
-                    )
                   })}
                 </div>
                 <Button

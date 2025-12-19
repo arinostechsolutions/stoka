@@ -12,7 +12,8 @@ import {
   DollarSign, 
   Building2,
   Hash,
-  Tag
+  Tag,
+  Award
 } from 'lucide-react'
 import { ProductForm } from './product-form'
 import { DeleteProductButton } from '../[id]/delete-button'
@@ -78,6 +79,12 @@ export function ProductCard({ product }: ProductCardProps) {
             <Badge variant="outline" className="text-xs">
               <Tag className="h-3 w-3 mr-1" />
               {product.category}
+            </Badge>
+          )}
+          {product.brand && (
+            <Badge variant="outline" className="text-xs">
+              <Award className="h-3 w-3 mr-1" />
+              {product.brand}
             </Badge>
           )}
         </div>

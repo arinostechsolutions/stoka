@@ -5,7 +5,7 @@ import Product from '@/lib/models/Product'
 import Movement from '@/lib/models/Movement'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertTriangle, Package, ArrowLeft } from 'lucide-react'
+import { AlertTriangle, Package, ArrowLeft, Award } from 'lucide-react'
 import Link from 'next/link'
 import { ProductForm } from '../components/product-form'
 import { DeleteProductButton } from './delete-button'
@@ -107,6 +107,15 @@ export default async function ProductDetailPage({
               <div className="flex justify-between items-center">
                 <span className="text-sm md:text-base text-muted-foreground">Categoria:</span>
                 <span className="text-sm md:text-base break-words text-right">{product.category}</span>
+              </div>
+            )}
+            {product.brand && (
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-sm md:text-base text-muted-foreground shrink-0 flex items-center gap-1">
+                  <Award className="h-4 w-4" />
+                  Marca:
+                </span>
+                <span className="text-sm md:text-base break-words text-right">{product.brand}</span>
               </div>
             )}
             {product.supplierId && (
