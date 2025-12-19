@@ -266,6 +266,11 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-base md:text-lg">
                       {movement.productId?.name || 'Produto removido'}
+                      {movement.productId?.size && (
+                        <span className="text-sm text-muted-foreground ml-2">
+                          (Tamanho: {movement.productId.size})
+                        </span>
+                      )}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
                       <span>

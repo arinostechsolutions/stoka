@@ -309,9 +309,14 @@ export function MovementForm({ children, productId }: MovementFormProps) {
                             ? (() => {
                                 const product = products.find((p: any) => p._id === selectedProduct)
                                 if (!product) return ''
-                                return product.brand 
-                                  ? `${product.name} - ${product.brand}`
-                                  : product.name
+                                let display = product.name
+                                if (product.brand) {
+                                  display += ` - ${product.brand}`
+                                }
+                                if (product.size) {
+                                  display += ` (Tamanho: ${product.size})`
+                                }
+                                return display
                               })()
                             : undefined
                         }
@@ -327,10 +332,17 @@ export function MovementForm({ children, productId }: MovementFormProps) {
                         ) : (
                         products.map((product: any) => (
                           <SelectItem key={product._id} value={product._id}>
-                            {product.brand 
-                              ? `${product.name} - ${product.brand} (${product.quantity} em estoque)`
-                              : `${product.name} (${product.quantity} em estoque)`
-                            }
+                            {(() => {
+                              let display = product.name
+                              if (product.brand) {
+                                display += ` - ${product.brand}`
+                              }
+                              if (product.size) {
+                                display += ` (Tamanho: ${product.size})`
+                              }
+                              display += ` (${product.quantity} em estoque)`
+                              return display
+                            })()}
                           </SelectItem>
                         ))
                       )}

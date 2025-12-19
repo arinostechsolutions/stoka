@@ -19,7 +19,7 @@ async function MovementsList() {
   await connectDB()
 
   const movements = await Movement.find({ userId: userId as any })
-    .populate('productId', 'name')
+    .populate('productId', 'name size')
     .populate('supplierId', 'name')
     .sort({ createdAt: -1 })
     .limit(1000) // Aumenta o limite para permitir filtros

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     }
 
     const products = await Product.find(filter)
-      .select('_id name quantity supplierId brand')
+      .select('_id name quantity supplierId brand size')
       .populate('supplierId', 'name')
       .sort({ name: 1 })
       .lean()
