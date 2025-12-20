@@ -14,7 +14,8 @@ import {
   Building2,
   Hash,
   Tag,
-  Award
+  Award,
+  Ruler
 } from 'lucide-react'
 import { ProductForm } from './product-form'
 import { DeleteProductButton } from '../[id]/delete-button'
@@ -98,6 +99,12 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
         
         <div className="flex flex-wrap gap-2 mt-2">
+          {product.size && (
+            <Badge variant="outline" className="text-xs">
+              <Ruler className="h-3 w-3 mr-1" />
+              Tamanho: {product.size}
+            </Badge>
+          )}
           {product.sku && (
             <Badge variant="outline" className="text-xs">
               <Hash className="h-3 w-3 mr-1" />
