@@ -15,6 +15,7 @@ export interface IProduct extends Document {
   color?: string // Cor
   brand?: string // Marca
   material?: string // Material (algodão, poliéster, etc)
+  imageUrl?: string // URL da imagem do produto no Cloudinary
   createdAt: Date
   updatedAt: Date
 }
@@ -80,6 +81,10 @@ const ProductSchema = new Schema<IProduct>(
       trim: true,
     },
     material: {
+      type: String,
+      trim: true,
+    },
+    imageUrl: {
       type: String,
       trim: true,
     },

@@ -6,15 +6,10 @@ import { registerSchema } from '@/lib/validations'
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    console.log('Dados recebidos:', { name: body.name, email: body.email, hasPassword: !!body.password })
-    
+    const body = await request.json()    
     const validatedData = registerSchema.parse(body)
-    console.log('Dados validados:', { name: validatedData.name, email: validatedData.email })
-
     try {
       await connectDB()
-      console.log('MongoDB conectado')
     } catch (dbError: any) {
       console.error('Erro ao conectar com MongoDB:', dbError.message)
       console.error('Stack:', dbError.stack)
@@ -29,8 +24,6 @@ export async function POST(request: Request) {
 
     const emailToCheck = validatedData.email.toLowerCase().trim()
     const existingUser = await User.findOne({ email: emailToCheck })
-    console.log('Usuário existente?', !!existingUser)
-
     if (existingUser) {
       return NextResponse.json(
         { error: 'Email já cadastrado' },
@@ -38,18 +31,12 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log('Gerando hash da senha...')
     const hashedPassword = await hashPassword(validatedData.password)
-    console.log('Hash gerado')
-
-    console.log('Criando usuário...')
     const user = await User.create({
       name: validatedData.name.trim(),
       email: emailToCheck,
       password: hashedPassword,
     })
-    console.log('Usuário criado com sucesso:', user._id)
-
     return NextResponse.json(
       { message: 'Conta criada com sucesso', userId: user._id.toString() },
       { status: 201 }

@@ -25,6 +25,7 @@ export const productSchema = z.object({
   color: z.string().optional(),
   brand: z.string().optional(),
   material: z.string().optional(),
+  imageUrl: z.string().url('URL da imagem inválida').optional().or(z.literal('')),
 })
 
 export const movementSchema = z.object({

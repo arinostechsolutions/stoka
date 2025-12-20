@@ -39,7 +39,6 @@ export default function RegisterPage() {
         return
       }
 
-      console.log('Conta criada com sucesso:', data)
       router.push('/login?registered=true')
     } catch (err: any) {
       console.error('Erro ao criar conta:', err)

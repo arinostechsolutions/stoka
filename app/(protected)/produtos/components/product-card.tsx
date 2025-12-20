@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -38,10 +39,17 @@ interface ProductCardProps {
     color?: string
     brand?: string
     material?: string
+    imageUrl?: string
   }
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  console.log('=== PRODUCT CARD RENDER ===')
+  console.log('product._id:', product._id)
+  console.log('product.name:', product.name)
+  console.log('product.imageUrl:', product.imageUrl)
+  console.log('product completo:', JSON.stringify(product, null, 2))
+  
   const isLowStock = product.quantity < product.minQuantity
   const stockPercentage = product.minQuantity > 0 
     ? (product.quantity / product.minQuantity) * 100 
@@ -60,6 +68,18 @@ export function ProductCard({ product }: ProductCardProps) {
       )}
 
       <CardHeader className="pb-3">
+        {/* Imagem do produto */}
+        {product.imageUrl && (
+          <div className="relative w-full h-48 mb-3 rounded-lg overflow-hidden border bg-muted">
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors">
@@ -205,6 +225,12 @@ export function ProductCard({ product }: ProductCardProps) {
                 color: product.color,
                 brand: product.brand,
                 material: product.material,
+                imageUrl: product.imageUrl,
+              }}
+              onProductChange={() => {
+                console.log('=== PRODUCT CARD DEBUG ===')
+                console.log('product.imageUrl:', product.imageUrl)
+                console.log('product completo:', product)
               }}
             >
               <Button variant="outline" size="sm" className="flex-1 sm:flex-initial sm:px-3">

@@ -26,7 +26,7 @@ async function MovementsList() {
     .lean()
 
   const products = await Product.find({ userId: userId as any })
-    .select('_id name supplierId')
+    .select('_id name supplierId brand size')
     .populate('supplierId', 'name')
     .sort({ name: 1 })
     .lean()

@@ -206,8 +206,19 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
                           : selectedSupplier !== 'all'
                           ? 'Todos os produtos do fornecedor'
                           : 'Todos os produtos'
-                        : filteredProducts.find((p: any) => p._id.toString() === selectedProduct)?.name || 
-                          products.find((p: any) => p._id.toString() === selectedProduct)?.name || ''
+                        : (() => {
+                            const product = filteredProducts.find((p: any) => p._id.toString() === selectedProduct) || 
+                                          products.find((p: any) => p._id.toString() === selectedProduct)
+                            if (!product) return ''
+                            let display = product.name
+                            if (product.brand) {
+                              display += ` - ${product.brand}`
+                            }
+                            if (product.size) {
+                              display += ` - ${product.size}`
+                            }
+                            return display
+                          })()
                     }
                   />
                 </SelectTrigger>
@@ -216,11 +227,20 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
                     {selectedSupplier !== 'all' ? 'Todos os produtos do fornecedor' : 'Todos os produtos'}
                   </SelectItem>
                   {filteredProducts.length > 0 ? (
-                    filteredProducts.map((product: any) => (
-                      <SelectItem key={product._id.toString()} value={product._id.toString()}>
-                        {product.name}
-                      </SelectItem>
-                    ))
+                    filteredProducts.map((product: any) => {
+                      let displayText = product.name
+                      if (product.brand) {
+                        displayText += ` - ${product.brand}`
+                      }
+                      if (product.size) {
+                        displayText += ` - ${product.size}`
+                      }
+                      return (
+                        <SelectItem key={product._id.toString()} value={product._id.toString()}>
+                          {displayText}
+                        </SelectItem>
+                      )
+                    })
                   ) : selectedSupplier !== 'all' ? (
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">
                       Nenhum produto encontrado para este fornecedor

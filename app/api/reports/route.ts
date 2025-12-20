@@ -93,10 +93,6 @@ export async function GET(request: Request) {
       }
     })
 
-    console.log('=== DEBUG TOTAL GASTO ===')
-    console.log('Entradas encontradas:', entradaMovements.length)
-    console.log('Total Gasto calculado:', totalSpent)
-
     // Receitas totais (saídas com preço de venda do produto)
     const revenueMatch: any = {
       ...additionalFilters,
@@ -132,10 +128,6 @@ export async function GET(request: Request) {
       }
     })
 
-    console.log('=== DEBUG TOTAL RECEITA ===')
-    console.log('Saídas encontradas:', saidaMovements.length)
-    console.log('Total Receita calculado:', totalRevenue)
-
     // Valor total do estoque (soma de purchasePrice * quantity de todos os produtos)
     let stockFilter: any = { userId: userIdFilter }
     if (productId && productId !== 'all') {
@@ -160,10 +152,6 @@ export async function GET(request: Request) {
         totalStockValue += product.purchasePrice * product.quantity
       }
     })
-
-    console.log('=== DEBUG VALOR ESTOQUE ===')
-    console.log('Produtos encontrados:', products.length)
-    console.log('Valor total do estoque:', totalStockValue)
 
     // Movimentações por dia (últimos 90 dias ou período selecionado)
     let dateRangeStart: Date
@@ -211,24 +199,11 @@ export async function GET(request: Request) {
     const allMovementsCount = await Movement.countDocuments({ userId: userIdFilter })
     const totalMovements = await Movement.countDocuments(dailyMovementsMatch)
     
-    console.log('=== DEBUG RELATÓRIOS ===')
-    console.log('UserId:', session.user.id)
-    console.log('UserIdFilter (ObjectId):', userIdFilter)
-    console.log('Total movements for user (no date filter):', allMovementsCount)
-    console.log('Total movements found (with date filter):', totalMovements)
-    console.log('Date range:', dateRangeStart, 'to', dateRangeEnd)
-    
     // Primeiro, vamos testar a agregação sem o $dateToString para ver se funciona
     const testAggregation = await Movement.aggregate([
       { $match: dailyMovementsMatch },
       { $limit: 5 },
     ])
-    console.log('Test aggregation (first 5):', testAggregation.map((m: any) => ({
-      type: m.type,
-      quantity: m.quantity,
-      createdAt: m.createdAt,
-      createdAtType: typeof m.createdAt,
-    })))
 
     const dailyMovements = await Movement.aggregate([
       { $match: dailyMovementsMatch },
@@ -284,9 +259,6 @@ export async function GET(request: Request) {
       },
       { $sort: { _id: 1 } },
     ])
-
-    console.log('Daily movements grouped:', dailyMovements.length)
-    console.log('Daily movements result:', JSON.stringify(dailyMovements, null, 2))
 
     // Top produtos por valor
     const topProductsFilter: any = { userId: userIdFilter }

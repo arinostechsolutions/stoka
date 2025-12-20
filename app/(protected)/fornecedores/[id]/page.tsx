@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import connectDB from '@/lib/db'
 import Supplier from '@/lib/models/Supplier'
+import Product from '@/lib/models/Product'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Building2, ArrowLeft, Mail, Phone, MapPin, Package, CreditCard } from 'lucide-react'
@@ -11,7 +12,6 @@ import { DeleteSupplierButton } from './delete-button'
 import { PurchaseForm } from './components/purchase-form'
 import { ProductsList } from './components/products-list'
 import { redirect } from 'next/navigation'
-import { Suspense } from 'react'
 import { formatPhone, formatCNPJ } from '@/lib/utils'
 import { ShoppingCart } from 'lucide-react'
 
@@ -33,6 +33,15 @@ export default async function SupplierDetailPage({
   if (!supplier) {
     redirect('/fornecedores')
   }
+
+  // Busca produtos associados ao fornecedor
+  const products = await Product.find({
+    userId: userId as any,
+    supplierId: params.id as any,
+  })
+    .select('_id name quantity')
+    .sort({ name: 1 })
+    .lean()
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -105,18 +114,16 @@ export default async function SupplierDetailPage({
             )}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg md:text-xl">Produtos Associados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={<p className="text-sm md:text-base text-muted-foreground">Carregando...</p>}>
-              <ProductsList supplierId={params.id} />
-            </Suspense>
-          </CardContent>
-        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg md:text-xl">Produtos Associados</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ProductsList initialProducts={products} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

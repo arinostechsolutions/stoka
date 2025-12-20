@@ -22,6 +22,17 @@ async function ProductsList() {
     .sort({ name: 1 })
     .lean()
 
+  // Debug: verifica se imageUrl está sendo retornado
+  console.log('=== PRODUTOS DEBUG ===')
+  console.log('Total de produtos:', products.length)
+  if (products.length > 0) {
+    console.log('Primeiro produto:', {
+      name: products[0].name,
+      imageUrl: products[0].imageUrl,
+      hasImageUrl: !!products[0].imageUrl
+    })
+  }
+
   const suppliers = await Supplier.find({ userId: userId as any })
     .select('_id name')
     .sort({ name: 1 })

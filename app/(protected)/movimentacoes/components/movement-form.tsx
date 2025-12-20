@@ -23,7 +23,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Package, Building2, ArrowLeftRight, Hash, FileText, TrendingUp, TrendingDown, Settings, DollarSign, Percent, Tag } from 'lucide-react'
 import { createMovement } from '../actions'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 
 interface MovementFormProps {
@@ -49,6 +49,7 @@ async function fetchSuppliers() {
 
 export function MovementForm({ children, productId }: MovementFormProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -64,7 +65,7 @@ export function MovementForm({ children, productId }: MovementFormProps) {
   const [currentStock, setCurrentStock] = useState<number | null>(null)
 
   // Busca produtos filtrados por fornecedor
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading, refetch } = useQuery({
     queryKey: ['products', selectedSupplier],
     queryFn: () => fetchProducts(selectedSupplier),
     enabled: true, // Sempre busca, mesmo sem fornecedor selecionado
@@ -74,6 +75,16 @@ export function MovementForm({ children, productId }: MovementFormProps) {
     queryKey: ['suppliers'],
     queryFn: fetchSuppliers,
   })
+
+  // Quando o modal abre, invalida e recarrega os produtos para garantir dados atualizados
+  useEffect(() => {
+    if (open) {
+      // Invalida todas as queries de produtos para forçar recarregamento
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      // Recarrega os produtos imediatamente
+      refetch()
+    }
+  }, [open, queryClient, refetch])
 
   useEffect(() => {
     if (productId) {
@@ -176,6 +187,9 @@ export function MovementForm({ children, productId }: MovementFormProps) {
       if (result.error) {
         setError(result.error)
       } else {
+        // Invalida todas as queries de produtos para garantir dados atualizados
+        queryClient.invalidateQueries({ queryKey: ['products'] })
+        
         setOpen(false)
         // Reset all fields
         setSelectedProduct('')
@@ -255,6 +269,9 @@ export function MovementForm({ children, productId }: MovementFormProps) {
                       setSelectedSupplier(value)
                       // Limpa a seleção de produto quando o fornecedor muda
                       setSelectedProduct('')
+                      // Invalida e recarrega produtos quando o fornecedor muda
+                      queryClient.invalidateQueries({ queryKey: ['products', value] })
+                      queryClient.invalidateQueries({ queryKey: ['products'] })
                     }}
                   >
                     <SelectTrigger className="h-11">

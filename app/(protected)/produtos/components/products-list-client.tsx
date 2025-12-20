@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import Image from 'next/image'
 import { ProductForm } from './product-form'
 import { ProductCard } from './product-card'
 import { Filter, Grid3x3, List, ChevronLeft, ChevronRight, Package, Plus, Edit } from 'lucide-react'
@@ -59,18 +60,6 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
-  
-  // Debug logs
-  console.log('=== PAGINAÇÃO DEBUG ===')
-  console.log('viewMode:', viewMode)
-  console.log('filteredProducts.length:', filteredProducts.length)
-  console.log('itemsPerPage:', itemsPerPage)
-  console.log('totalPages:', totalPages)
-  console.log('currentPage:', currentPage)
-  console.log('startIndex:', startIndex)
-  console.log('endIndex:', endIndex)
-  console.log('paginatedProducts.length:', paginatedProducts.length)
-  console.log('========================')
 
   // Reset para primeira página quando os filtros mudarem
   useEffect(() => {
@@ -228,7 +217,22 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                     <CardContent className="pt-4 md:pt-6">
                       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-base md:text-lg">{product.name}</p>
+                          <div className="flex items-start gap-3">
+                            {product.imageUrl && (
+                              <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border bg-muted shrink-0">
+                                <Image
+                                  src={product.imageUrl}
+                                  alt={product.name}
+                                  fill
+                                  className="object-cover"
+                                  unoptimized
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-base md:text-lg">{product.name}</p>
+                            </div>
+                          </div>
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
                             {product.sku && (
                               <>
@@ -291,6 +295,7 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                               color: product.color,
                               brand: product.brand,
                               material: product.material,
+                              imageUrl: product.imageUrl,
                             }}
                           >
                             <Button variant="outline" size="sm" className="flex-1 md:flex-initial">
@@ -306,30 +311,9 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                 ))}
               </div>
               
-              {/* Paginação para lista */}
-              {(() => {
-                console.log('=== RENDERIZAÇÃO PAGINAÇÃO LISTA ===')
-                console.log('viewMode:', viewMode)
-                console.log('viewMode === list:', viewMode === 'list')
-                console.log('totalPages:', totalPages)
-                console.log('totalPages > 1:', totalPages > 1)
-                console.log('Condição completa:', viewMode === 'list' && totalPages > 1)
-                console.log('filteredProducts.length:', filteredProducts.length)
-                console.log('itemsPerPage:', itemsPerPage)
-                return null
-              })()}
               {viewMode === 'list' && totalPages > 1 && (
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t">
                   <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
-                    {(() => {
-                      const produtosExibidos = Math.min(endIndex, filteredProducts.length)
-                      console.log('=== MENSAGEM PAGINAÇÃO LISTA ===')
-                      console.log('endIndex:', endIndex)
-                      console.log('filteredProducts.length:', filteredProducts.length)
-                      console.log('produtosExibidos:', produtosExibidos)
-                      console.log('currentPage:', currentPage)
-                      return `${produtosExibidos} de ${filteredProducts.length} produtos`
-                    })()}
                   </div>
                   <div className="flex items-center justify-center gap-2">
                     <Button
@@ -407,15 +391,6 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
           {viewMode === 'cards' && totalPages > 1 && (
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t">
               <div className="text-xs md:text-sm text-muted-foreground text-center md:text-left">
-                {(() => {
-                  const produtosExibidos = Math.min(endIndex, filteredProducts.length)
-                  console.log('=== MENSAGEM PAGINAÇÃO CARDS ===')
-                  console.log('endIndex:', endIndex)
-                  console.log('filteredProducts.length:', filteredProducts.length)
-                  console.log('produtosExibidos:', produtosExibidos)
-                  console.log('currentPage:', currentPage)
-                  return `${produtosExibidos} de ${filteredProducts.length} produtos`
-                })()}
               </div>
               <div className="flex items-center justify-center gap-2">
                 <Button

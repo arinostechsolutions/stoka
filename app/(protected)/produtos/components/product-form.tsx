@@ -9,7 +9,8 @@ import { CurrencyInput } from '@/components/ui/currency-input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, Package, Hash, Tag, Building2, Box, AlertTriangle, DollarSign, Ruler, Palette, Award, Shirt } from 'lucide-react'
+import { AlertCircle, Package, Hash, Tag, Building2, Box, AlertTriangle, DollarSign, Ruler, Palette, Award, Shirt, Upload, X, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import { createProduct, updateProduct } from '../actions'
 import {
   Select,
@@ -45,11 +46,13 @@ interface ProductFormProps {
     color?: string
     brand?: string
     material?: string
+    imageUrl?: string
   }
 }
 
 export function ProductForm({ children, product }: ProductFormProps) {
   const router = useRouter()
+  const formRef = React.useRef<HTMLFormElement>(null)
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -60,6 +63,10 @@ export function ProductForm({ children, product }: ProductFormProps) {
   const [color, setColor] = useState(product?.color || '')
   const [brand, setBrand] = useState(product?.brand || '')
   const [material, setMaterial] = useState(product?.material || '')
+  const [imageUrl, setImageUrl] = useState(product?.imageUrl || '')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ['suppliers'],
@@ -76,44 +83,151 @@ export function ProductForm({ children, product }: ProductFormProps) {
   }, [selectedSupplierData])
   
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validação do tipo de arquivo
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setError('Tipo de arquivo inválido. Use JPEG, PNG ou WebP')
+      return
+    }
+
+    // Validação do tamanho (máximo 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      setError('Arquivo muito grande. Tamanho máximo: 5MB')
+      return
+    }
+
+    setImageFile(file)
+    setError('')
+
+    // Cria preview local
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setImageUrl('')
+  }
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || 'Erro ao fazer upload da imagem')
+    }
+
+    const data = await res.json()
+    return data.url
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
+    setIsUploading(true)
 
-    const formData = new FormData(e.currentTarget)
-
-    // Garante que os campos de vestuário sejam sempre enviados (mesmo que vazios)
-    // Isso é necessário para que o backend saiba que os campos foram enviados
-    if (isVestuarioSupplier) {
-      formData.set('size', size || '')
-      formData.set('color', color || '')
-      formData.set('brand', brand || '')
-      formData.set('material', material || '')
-    }
-
-    startTransition(async () => {
-      const result = product
-        ? await updateProduct(product._id, formData)
-        : await createProduct(formData)
-
-      if (result.error) {
-        setError(result.error)
+    try {
+      // Faz upload da imagem se houver arquivo selecionado
+      // Prioridade: 1) Novo arquivo para upload, 2) imageUrl limpo (remover), 3) Manter existente
+      let finalImageUrl: string
+      
+      if (imageFile) {
+        // Se há novo arquivo, faz upload (prioridade máxima)
+        try {
+          finalImageUrl = await uploadImage(imageFile)
+        } catch (err: any) {
+          setError(err.message || 'Erro ao fazer upload da imagem')
+          setIsUploading(false)
+          return
+        }
+      } else if (imageUrl === '') {
+        // Se imageUrl foi explicitamente limpo (removido) e não há novo arquivo, remove do banco
+        finalImageUrl = ''
       } else {
-        setOpen(false)
-        setPurchasePrice('')
-        setSalePrice('')
-        setSize('')
-        setColor('')
-        setBrand('')
-        setMaterial('')
-        router.refresh()
+        // Se não há novo arquivo e imageUrl não foi limpo, mantém o existente
+        finalImageUrl = imageUrl || (product?.imageUrl || '')
       }
-    })
+      
+      console.log('=== FINAL IMAGE URL DEBUG ===')
+      console.log('finalImageUrl:', finalImageUrl)
+      console.log('imageUrl state:', imageUrl)
+      console.log('product?.imageUrl:', product?.imageUrl)
+      console.log('imageFile:', imageFile)
+
+      // Cria FormData a partir do formulário usando ref
+      const form = formRef.current || e.currentTarget
+      if (!form) {
+        setError('Erro ao processar formulário')
+        setIsUploading(false)
+        return
+      }
+      
+      const formData = new FormData(form)
+
+      // Adiciona a URL da imagem (sempre, mesmo que vazia)
+      formData.set('imageUrl', finalImageUrl || '')
+      console.log('=== DEBUG IMAGEM ===')
+      console.log('finalImageUrl:', finalImageUrl)
+      console.log('formData imageUrl:', formData.get('imageUrl'))
+
+      // Garante que os campos de vestuário sejam sempre enviados (mesmo que vazios)
+      // Isso é necessário para que o backend saiba que os campos foram enviados
+      if (isVestuarioSupplier) {
+        formData.set('size', size || '')
+        formData.set('color', color || '')
+        formData.set('brand', brand || '')
+        formData.set('material', material || '')
+      }
+
+      startTransition(async () => {
+        const result = product
+          ? await updateProduct(product._id, formData)
+          : await createProduct(formData)
+
+        if (result.error) {
+          setError(result.error)
+          setIsUploading(false)
+        } else {
+          setOpen(false)
+          setPurchasePrice('')
+          setSalePrice('')
+          setSize('')
+          setColor('')
+          setBrand('')
+          setMaterial('')
+          setImageUrl('')
+          setImageFile(null)
+          setImagePreview(null)
+          setIsUploading(false)
+          router.refresh()
+        }
+      })
+    } catch (err: any) {
+      setError(err.message || 'Erro ao processar formulário')
+      setIsUploading(false)
+    }
   }
 
   // Reset form when modal opens/closes or product changes
   React.useEffect(() => {
     if (open && product) {
+      console.log('=== EDITAR PRODUTO DEBUG ===')
+      console.log('product.imageUrl:', product.imageUrl)
       setSelectedSupplier(product.supplierId || '')
       setPurchasePrice(product.purchasePrice?.toString() || '')
       setSalePrice(product.salePrice?.toString() || '')
@@ -121,6 +235,10 @@ export function ProductForm({ children, product }: ProductFormProps) {
       setColor(product.color || '')
       setBrand(product.brand || '')
       setMaterial(product.material || '')
+      setImageUrl(product.imageUrl || '')
+      setImagePreview(product.imageUrl || null)
+      setImageFile(null)
+      console.log('imagePreview setado para:', product.imageUrl || null)
     } else if (!open && !product) {
       // Só reseta se não estiver editando
       setSelectedSupplier('')
@@ -130,6 +248,9 @@ export function ProductForm({ children, product }: ProductFormProps) {
       setColor('')
       setBrand('')
       setMaterial('')
+      setImageUrl('')
+      setImageFile(null)
+      setImagePreview(null)
     }
   }, [open, product])
 
@@ -144,7 +265,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
               {product ? 'Editar Produto' : 'Novo Produto'}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -266,6 +387,61 @@ export function ProductForm({ children, product }: ProductFormProps) {
                 </div>
               )}
 
+              {/* Upload de Imagem */}
+              <div className="space-y-2">
+                <Label htmlFor="image" className="text-sm font-semibold flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Imagem do Produto
+                </Label>
+                <div className="space-y-3">
+                  {imagePreview ? (
+                    <div className="relative group">
+                      <div className="relative w-full h-48 rounded-lg border-2 border-dashed border-muted-foreground/25 overflow-hidden bg-muted/50">
+                        <Image
+                          src={imagePreview}
+                          alt="Preview"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleRemoveImage}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            disabled={isUploading}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                      {imageFile && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Imagem será enviada ao salvar o produto
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={handleImageSelect}
+                        disabled={isUploading}
+                        className="h-11 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Formatos aceitos: JPEG, PNG, WebP. Tamanho máximo: 5MB. A imagem será enviada apenas ao salvar o produto.
+                  </p>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-semibold flex items-center gap-2">
                   <Package className="h-4 w-4" />
@@ -386,15 +562,11 @@ export function ProductForm({ children, product }: ProductFormProps) {
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isPending} className="h-11 min-w-[120px]">
-                {isPending ? (
+              <Button type="submit" disabled={isPending || isUploading} className="h-11 min-w-[120px]">
+                {(isPending || isUploading) ? (
                   <span className="flex items-center gap-2">
-                    <motion.div
-                      className="h-4 w-4 border-2 border-white border-t-transparent rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                    />
-                    Salvando...
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {isUploading ? 'Enviando imagem...' : (product ? 'Salvando...' : 'Criando...')}
                   </span>
                 ) : (
                   product ? 'Atualizar' : 'Criar Produto'
