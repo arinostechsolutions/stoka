@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import imageCompression from 'browser-image-compression'
 
 async function fetchSuppliers() {
   const res = await fetch('/api/suppliers')
@@ -50,7 +51,7 @@ interface ProductFormProps {
     imageUrl?: string
   pre_venda?: boolean
   genero?: 'masculino' | 'feminino' | 'unissex'
-}
+  }
 }
 
 export function ProductForm({ children, product }: ProductFormProps) {
@@ -72,6 +73,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null)
   const [isUploading, setIsUploading] = useState(false)
+  const [imageCompressionInfo, setImageCompressionInfo] = useState<{ original: number; compressed: number } | null>(null)
   const [createInitialMovement, setCreateInitialMovement] = useState(false)
 
   const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
@@ -89,7 +91,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
   }, [selectedSupplierData])
   
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -100,14 +102,58 @@ export function ProductForm({ children, product }: ProductFormProps) {
       return
     }
 
-    // Validação do tamanho (máximo 5MB)
     const maxSize = 5 * 1024 * 1024 // 5MB
+    let processedFile = file
+    const originalSize = file.size
+
+    // Se o arquivo exceder 5MB, comprime
     if (file.size > maxSize) {
-      setError('Arquivo muito grande. Tamanho máximo: 5MB')
-      return
+      setIsUploading(true)
+      setImageCompressionInfo(null)
+      try {
+        const options = {
+          maxSizeMB: 5,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+          fileType: file.type,
+        }
+        
+        processedFile = await imageCompression(file, options)
+        
+        // Verifica se ainda está acima do limite após compressão
+        if (processedFile.size > maxSize) {
+          // Tenta compressão mais agressiva
+          const aggressiveOptions = {
+            maxSizeMB: 5,
+            maxWidthOrHeight: 1600,
+            useWebWorker: true,
+            fileType: file.type,
+            initialQuality: 0.7,
+          }
+          processedFile = await imageCompression(file, aggressiveOptions)
+        }
+
+        // Salva informações de compressão para exibir ao usuário
+        if (processedFile.size < originalSize) {
+          setImageCompressionInfo({
+            original: originalSize,
+            compressed: processedFile.size,
+          })
+        }
+      } catch (error: any) {
+        console.error('Erro ao comprimir imagem:', error)
+        setError('Erro ao comprimir imagem. Tente uma imagem menor.')
+        setIsUploading(false)
+        setImageCompressionInfo(null)
+        return
+      } finally {
+        setIsUploading(false)
+      }
+    } else {
+      setImageCompressionInfo(null)
     }
 
-    setImageFile(file)
+    setImageFile(processedFile)
     setError('')
 
     // Cria preview local
@@ -115,13 +161,14 @@ export function ProductForm({ children, product }: ProductFormProps) {
     reader.onloadend = () => {
       setImagePreview(reader.result as string)
     }
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(processedFile)
   }
 
   const handleRemoveImage = () => {
     setImageFile(null)
     setImagePreview(null)
     setImageUrl('')
+    setImageCompressionInfo(null)
   }
 
   const uploadImage = async (file: File): Promise<string> => {
@@ -145,7 +192,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
-    
+
     // Validação: se criar movimentação inicial, preço de compra é obrigatório
     if (!product && createInitialMovement) {
       const quantityValue = (e.currentTarget.querySelector('[name="quantity"]') as HTMLInputElement)?.value
@@ -209,47 +256,48 @@ export function ProductForm({ children, product }: ProductFormProps) {
       formData.set('nome_vitrine', nomeVitrineValue)
       console.log('Valor no formData:', formData.get('nome_vitrine'))
 
-      // Garante que os campos de vestuário sejam sempre enviados (mesmo que vazios)
-      // Isso é necessário para que o backend saiba que os campos foram enviados
-      if (isVestuarioSupplier) {
-        formData.set('size', size || '')
-        formData.set('color', color || '')
-        formData.set('brand', brand || '')
-        formData.set('material', material || '')
+    // Garante que os campos de vestuário sejam sempre enviados (mesmo que vazios)
+    // Isso é necessário para que o backend saiba que os campos foram enviados
+    if (isVestuarioSupplier) {
+      formData.set('size', size || '')
+      formData.set('color', color || '')
+      formData.set('brand', brand || '')
+      formData.set('material', material || '')
         formData.set('genero', genero || '')
       } else {
         // Se não é fornecedor de vestuário, envia vazio para remover o campo
         formData.set('genero', '')
-      }
+    }
       
       // Adiciona pre_venda (sempre envia, mesmo que false)
       formData.set('pre_venda', pre_venda ? 'true' : 'false')
 
-      startTransition(async () => {
-        const result = product
-          ? await updateProduct(product._id, formData)
-          : await createProduct(formData)
+    startTransition(async () => {
+      const result = product
+        ? await updateProduct(product._id, formData)
+        : await createProduct(formData)
 
-        if (result.error) {
-          setError(result.error)
+      if (result.error) {
+        setError(result.error)
           setIsUploading(false)
-        } else {
-          setOpen(false)
-          setPurchasePrice('')
-          setSalePrice('')
-          setSize('')
-          setColor('')
-          setBrand('')
-          setMaterial('')
+      } else {
+        setOpen(false)
+        setPurchasePrice('')
+        setSalePrice('')
+        setSize('')
+        setColor('')
+        setBrand('')
+        setMaterial('')
           setGenero('')
           setPre_venda(false)
           setImageUrl('')
           setImageFile(null)
           setImagePreview(null)
+          setImageCompressionInfo(null)
           setIsUploading(false)
-          router.refresh()
-        }
-      })
+        router.refresh()
+      }
+    })
     } catch (err: any) {
       setError(err.message || 'Erro ao processar formulário')
       setIsUploading(false)
@@ -285,6 +333,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
       setImageUrl('')
       setImageFile(null)
       setImagePreview(null)
+      setImageCompressionInfo(null)
       setCreateInitialMovement(false)
     }
   }, [open, product])
@@ -493,10 +542,24 @@ export function ProductForm({ children, product }: ProductFormProps) {
                           </Button>
                         </div>
                       </div>
-                      {imageFile && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Imagem será enviada ao salvar o produto
-                        </p>
+                      {isUploading && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Comprimindo imagem...</span>
+                        </div>
+                      )}
+                      {imageFile && !isUploading && (
+                        <div className="space-y-1 mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            Imagem será enviada ao salvar o produto
+                          </p>
+                          {imageCompressionInfo && (
+                            <p className="text-xs text-amber-600">
+                              Imagem comprimida: {(imageCompressionInfo.original / 1024 / 1024).toFixed(2)}MB → {(imageCompressionInfo.compressed / 1024 / 1024).toFixed(2)}MB
+                              ({((1 - imageCompressionInfo.compressed / imageCompressionInfo.original) * 100).toFixed(0)}% de redução)
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   ) : (

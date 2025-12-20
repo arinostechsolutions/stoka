@@ -211,12 +211,12 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="space-y-2">
-                {paginatedProducts.map((product: any) => (
-                  <Card key={product._id.toString()} className="group hover:shadow-md transition-shadow">
-                    <CardContent className="pt-4 md:pt-6">
-                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div className="flex-1 min-w-0">
+            <div className="space-y-2">
+              {paginatedProducts.map((product: any) => (
+                <Card key={product._id.toString()} className="group hover:shadow-md transition-shadow">
+                  <CardContent className="pt-4 md:pt-6">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="flex-1 min-w-0">
                           <div className="flex items-start gap-3">
                             {product.imageUrl && (
                               <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border bg-muted shrink-0">
@@ -236,89 +236,89 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                                   <p className="text-sm text-muted-foreground">{product.name}</p>
                                 </div>
                               ) : (
-                                <p className="font-medium text-base md:text-lg">{product.name}</p>
+                        <p className="font-medium text-base md:text-lg">{product.name}</p>
                               )}
                             </div>
                           </div>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
-                            {product.sku && (
-                              <>
-                                <span>SKU: {product.sku}</span>
-                                <span>•</span>
-                              </>
-                            )}
-                            {product.category && (
-                              <>
-                                <span>{product.category}</span>
-                                <span>•</span>
-                              </>
-                            )}
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
+                          {product.sku && (
+                            <>
+                              <span>SKU: {product.sku}</span>
+                              <span>•</span>
+                            </>
+                          )}
+                          {product.category && (
+                            <>
+                              <span>{product.category}</span>
+                              <span>•</span>
+                            </>
+                          )}
                             {product.brand && (
                               <>
                                 <span>Marca: {product.brand}</span>
                                 <span>•</span>
                               </>
                             )}
-                            <span className={product.quantity < product.minQuantity ? 'text-destructive font-semibold' : ''}>
-                              Estoque: {product.quantity}
-                            </span>
-                            <span>•</span>
-                            <span>Mínimo: {product.minQuantity}</span>
-                            {product.supplierId && (
-                              <>
-                                <span>•</span>
-                                <span className="break-all">Fornecedor: {product.supplierId.name}</span>
-                              </>
-                            )}
-                          </div>
-                          {(product.purchasePrice || product.salePrice) && (
-                            <div className="mt-2 flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm">
-                              {product.purchasePrice && (
-                                <span className="text-muted-foreground">
-                                  Compra: <span className="font-semibold text-green-600">{formatCurrency(product.purchasePrice)}</span>
-                                </span>
-                              )}
-                              {product.salePrice && (
-                                <span className="text-muted-foreground">
-                                  Venda: <span className="font-semibold text-blue-600">{formatCurrency(product.salePrice)}</span>
-                                </span>
-                              )}
-                            </div>
+                          <span className={product.quantity < product.minQuantity ? 'text-destructive font-semibold' : ''}>
+                            Estoque: {product.quantity}
+                          </span>
+                          <span>•</span>
+                          <span>Mínimo: {product.minQuantity}</span>
+                          {product.supplierId && (
+                            <>
+                              <span>•</span>
+                              <span className="break-all">Fornecedor: {product.supplierId.name}</span>
+                            </>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0">
-                          <ProductForm 
-                            product={{
-                              _id: product._id.toString(),
-                              name: product.name,
+                        {(product.purchasePrice || product.salePrice) && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm">
+                            {product.purchasePrice && (
+                              <span className="text-muted-foreground">
+                                Compra: <span className="font-semibold text-green-600">{formatCurrency(product.purchasePrice)}</span>
+                              </span>
+                            )}
+                            {product.salePrice && (
+                              <span className="text-muted-foreground">
+                                Venda: <span className="font-semibold text-blue-600">{formatCurrency(product.salePrice)}</span>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0">
+                        <ProductForm 
+                          product={{
+                            _id: product._id.toString(),
+                            name: product.name,
                               nome_vitrine: product.nome_vitrine,
-                              sku: product.sku,
-                              category: product.category,
-                              supplierId: product.supplierId?._id?.toString() || product.supplierId?.toString(),
-                              quantity: product.quantity,
-                              minQuantity: product.minQuantity,
-                              purchasePrice: product.purchasePrice,
-                              salePrice: product.salePrice,
-                              size: product.size,
-                              color: product.color,
-                              brand: product.brand,
-                              material: product.material,
+                            sku: product.sku,
+                            category: product.category,
+                            supplierId: product.supplierId?._id?.toString() || product.supplierId?.toString(),
+                            quantity: product.quantity,
+                            minQuantity: product.minQuantity,
+                            purchasePrice: product.purchasePrice,
+                            salePrice: product.salePrice,
+                            size: product.size,
+                            color: product.color,
+                            brand: product.brand,
+                            material: product.material,
                               imageUrl: product.imageUrl,
                               pre_venda: product.pre_venda,
                               genero: product.genero,
-                            }}
-                          >
-                            <Button variant="outline" size="sm" className="flex-1 md:flex-initial">
-                              <Edit className="h-4 w-4 md:mr-2" />
-                              <span className="hidden md:inline">Editar</span>
-                            </Button>
-                          </ProductForm>
-                          <DeleteProductButton productId={product._id.toString()} />
-                        </div>
+                          }}
+                        >
+                          <Button variant="outline" size="sm" className="flex-1 md:flex-initial">
+                            <Edit className="h-4 w-4 md:mr-2" />
+                            <span className="hidden md:inline">Editar</span>
+                          </Button>
+                        </ProductForm>
+                        <DeleteProductButton productId={product._id.toString()} />
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
               </div>
               
               {viewMode === 'list' && totalPages > 1 && (
@@ -436,17 +436,17 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                         pageNum === totalPages ||
                         (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
                       ) {
-                        return (
-                          <Button
-                            key={pageNum}
-                            variant={currentPage === pageNum ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setCurrentPage(pageNum)}
-                            className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
-                          >
-                            {pageNum}
-                          </Button>
-                        )
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="min-w-[36px] md:min-w-[40px] text-xs md:text-sm"
+                      >
+                        {pageNum}
+                      </Button>
+                    )
                       } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
                         return (
                           <span key={pageNum} className="px-2 text-muted-foreground">

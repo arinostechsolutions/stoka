@@ -7,6 +7,9 @@ import Product from '@/lib/models/Product'
 import Supplier from '@/lib/models/Supplier'
 import mongoose from 'mongoose'
 
+// Força renderização dinâmica pois usa getServerSession que depende de headers
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)

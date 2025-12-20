@@ -48,7 +48,6 @@ async function deleteImageFromCloudinary(imageUrl: string): Promise<void> {
           console.error('Erro ao deletar imagem do Cloudinary:', error)
           reject(error)
         } else {
-          console.log('Imagem deletada do Cloudinary:', publicId)
           resolve(result)
         }
       })
@@ -129,8 +128,6 @@ export async function createProduct(formData: FormData) {
 
     const createdProduct = await Product.create(productData)
     
-    console.log('Produto criado com imageUrl:', createdProduct.imageUrl)
-
     // Cria movimentação inicial se solicitado, houver quantidade e preço de compra
     if (shouldCreateInitialMovement && initialQuantity > 0) {
       const purchasePrice = validatedData.purchasePrice
@@ -280,18 +277,12 @@ export async function updateProduct(id: string, formData: FormData) {
 
     // Processa nome_vitrine (campo opcional)
     const nomeVitrineRaw = formData.get('nome_vitrine') as string | null
-    console.log('=== ACTION - nome_vitrine ===')
-    console.log('Valor raw do formData:', nomeVitrineRaw)
-    console.log('Tipo:', typeof nomeVitrineRaw)
     const nomeVitrineValue = processOptionalField(nomeVitrineRaw)
-    console.log('Valor processado:', nomeVitrineValue)
     if (nomeVitrineValue === undefined) {
       // Se foi enviado vazio ou null, remove do banco
-      console.log('nome_vitrine será removido (unsetData)')
       unsetData.nome_vitrine = ''
     } else {
       // Se tem valor, atualiza
-      console.log('nome_vitrine será salvo:', nomeVitrineValue)
       updateData.nome_vitrine = nomeVitrineValue
     }
 
@@ -410,24 +401,14 @@ export async function updateProduct(id: string, formData: FormData) {
     }
 
     // Atualiza o produto
-    console.log('=== ANTES DE SALVAR ===')
-    console.log('updateData completo:', JSON.stringify(updateData, null, 2))
-    console.log('unsetData completo:', JSON.stringify(unsetData, null, 2))
-    console.log('nome_vitrine em updateData:', updateData.nome_vitrine)
-    console.log('nome_vitrine em unsetData:', unsetData.nome_vitrine)
-    console.log('pre_venda sendo salvo:', updateData.pre_venda)
     
     // Remove campos de unsetData que também estão em updateData (para evitar conflito)
     const finalUnsetData = { ...unsetData }
     Object.keys(updateData).forEach(key => {
       if (finalUnsetData[key] !== undefined) {
         delete finalUnsetData[key]
-        console.log(`Removido ${key} de unsetData pois está em updateData`)
       }
     })
-    
-    console.log('finalUnsetData após limpeza:', JSON.stringify(finalUnsetData, null, 2))
-    console.log('updateData final:', JSON.stringify(updateData, null, 2))
     
     // Constrói a operação de update
     const updateOperation: Record<string, any> = { ...updateData }
@@ -435,7 +416,6 @@ export async function updateProduct(id: string, formData: FormData) {
       updateOperation.$unset = finalUnsetData
     }
     
-    console.log('Operação de update completa:', JSON.stringify(updateOperation, null, 2))
     
     await Product.updateOne(
       { _id: id, userId: session.user.id as any },
@@ -443,11 +423,6 @@ export async function updateProduct(id: string, formData: FormData) {
     )
     
     const updatedProduct = await Product.findOne({ _id: id, userId: session.user.id as any }).lean()
-    console.log('=== APÓS SALVAR ===')
-    console.log('Produto atualizado - imageUrl:', updatedProduct?.imageUrl)
-    console.log('Produto atualizado - pre_venda:', updatedProduct?.pre_venda)
-    console.log('Produto atualizado - nome_vitrine:', updatedProduct?.nome_vitrine)
-    console.log('Produto completo (nome_vitrine):', JSON.stringify({ nome_vitrine: updatedProduct?.nome_vitrine, name: updatedProduct?.name }, null, 2))
 
     revalidatePath('/produtos')
     revalidatePath(`/produtos/${id}`)

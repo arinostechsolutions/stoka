@@ -90,9 +90,9 @@ export function ProductCard({ product }: ProductCardProps) {
                 </p>
               </div>
             ) : (
-              <CardTitle className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors">
-                {product.name}
-              </CardTitle>
+            <CardTitle className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors">
+              {product.name}
+            </CardTitle>
             )}
           </div>
         </div>

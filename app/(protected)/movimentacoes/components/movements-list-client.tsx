@@ -236,9 +236,9 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
                         displayText += ` - ${product.size}`
                       }
                       return (
-                        <SelectItem key={product._id.toString()} value={product._id.toString()}>
+                      <SelectItem key={product._id.toString()} value={product._id.toString()}>
                           {displayText}
-                        </SelectItem>
+                      </SelectItem>
                       )
                     })
                   ) : selectedSupplier !== 'all' ? (
