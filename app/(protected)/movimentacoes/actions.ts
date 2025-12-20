@@ -107,6 +107,7 @@ export async function createMovement(formData: FormData) {
       salePrice: validatedData.salePrice,
       discountType: validatedData.discountType,
       discountValue: validatedData.discountValue,
+      campaignId: validatedData.campaignId,
       totalRevenue: totalRevenue,
       notes: validatedData.notes,
     })

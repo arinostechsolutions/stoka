@@ -16,6 +16,7 @@ export interface IMovement extends Document {
   discountType?: 'percent' | 'fixed' // Tipo de desconto
   discountValue?: number // Valor do desconto (percentual ou fixo)
   totalRevenue?: number // Receita total após desconto (quantity * salePrice - discount)
+  campaignId?: Types.ObjectId // Campanha associada à venda
   notes?: string
   createdAt: Date
 }
@@ -81,6 +82,11 @@ const MovementSchema = new Schema<IMovement>(
     totalRevenue: {
       type: Number,
       min: [0, 'Receita total não pode ser negativa'],
+    },
+    campaignId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Campaign',
+      index: true,
     },
     notes: {
       type: String,

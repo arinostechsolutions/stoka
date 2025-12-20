@@ -26,7 +26,10 @@ async function InvoicesListServer() {
     .limit(100)
     .lean()
 
-  return <InvoicesList initialMovements={movements} />
+  // Serializa para JSON simples para evitar warnings do Next.js
+  const serializedMovements = JSON.parse(JSON.stringify(movements))
+
+  return <InvoicesList initialMovements={serializedMovements} />
 }
 
 export default async function NotasFiscaisPage() {

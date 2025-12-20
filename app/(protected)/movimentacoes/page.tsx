@@ -19,7 +19,7 @@ async function MovementsList() {
   await connectDB()
 
   const movements = await Movement.find({ userId: userId as any })
-    .populate('productId', 'name size')
+    .populate('productId', 'name size brand')
     .populate('supplierId', 'name')
     .sort({ createdAt: -1 })
     .limit(1000) // Aumenta o limite para permitir filtros
@@ -36,11 +36,16 @@ async function MovementsList() {
     .sort({ name: 1 })
     .lean()
 
+  // Serializa para JSON simples para evitar warnings do Next.js
+  const serializedMovements = JSON.parse(JSON.stringify(movements))
+  const serializedProducts = JSON.parse(JSON.stringify(products))
+  const serializedSuppliers = JSON.parse(JSON.stringify(suppliers))
+
   return (
     <MovementsListClient 
-      initialMovements={movements} 
-      products={products}
-      suppliers={suppliers}
+      initialMovements={serializedMovements} 
+      products={serializedProducts}
+      suppliers={serializedSuppliers}
     />
   )
 }

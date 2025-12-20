@@ -150,7 +150,7 @@ Total: ${formatCurrency(total)}
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Tipo de Documento</Label>
-                    <Select value={clientType} onValueChange={(v: 'cpf' | 'cnpj') => setClientType(v)}>
+                    <Select value={clientType} onValueChange={(v: string) => setClientType(v as 'cpf' | 'cnpj')}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -285,7 +285,7 @@ Total: ${formatCurrency(total)}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Preencha os dados acima e use o botão "Copiar Resumo" para facilitar o preenchimento no Emissor Web.
+                Preencha os dados acima e use o botão &quot;Copiar Resumo&quot; para facilitar o preenchimento no Emissor Web.
               </p>
             </div>
           </div>

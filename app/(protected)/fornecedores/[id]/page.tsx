@@ -34,6 +34,9 @@ export default async function SupplierDetailPage({
     redirect('/fornecedores')
   }
 
+  // Serializa para JSON simples para evitar warnings do Next.js
+  const serializedSupplier = JSON.parse(JSON.stringify(supplier))
+
   // Busca produtos associados ao fornecedor
   const products = await Product.find({
     userId: userId as any,
@@ -42,6 +45,9 @@ export default async function SupplierDetailPage({
     .select('_id name quantity')
     .sort({ name: 1 })
     .lean()
+
+  // Serializa para JSON simples para evitar warnings do Next.js
+  const serializedProducts = JSON.parse(JSON.stringify(products))
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -67,7 +73,7 @@ export default async function SupplierDetailPage({
               <span className="sm:hidden">Compra</span>
             </Button>
           </PurchaseForm>
-          <SupplierForm supplier={supplier as any}>
+          <SupplierForm supplier={serializedSupplier as any}>
             <Button variant="outline" className="flex-1 md:flex-initial">
               Editar
             </Button>
@@ -121,7 +127,7 @@ export default async function SupplierDetailPage({
           <CardTitle className="text-lg md:text-xl">Produtos Associados</CardTitle>
         </CardHeader>
         <CardContent>
-          <ProductsList initialProducts={products} />
+          <ProductsList initialProducts={serializedProducts} />
         </CardContent>
       </Card>
     </div>

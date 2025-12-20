@@ -35,6 +35,7 @@ interface ProductFormProps {
   product?: {
     _id: string
     name: string
+    nome_vitrine?: string
     sku?: string
     category?: string
     supplierId?: string
@@ -47,7 +48,9 @@ interface ProductFormProps {
     brand?: string
     material?: string
     imageUrl?: string
-  }
+  pre_venda?: boolean
+  genero?: 'masculino' | 'feminino' | 'unissex'
+}
 }
 
 export function ProductForm({ children, product }: ProductFormProps) {
@@ -63,10 +66,13 @@ export function ProductForm({ children, product }: ProductFormProps) {
   const [color, setColor] = useState(product?.color || '')
   const [brand, setBrand] = useState(product?.brand || '')
   const [material, setMaterial] = useState(product?.material || '')
+  const [genero, setGenero] = useState<'masculino' | 'feminino' | 'unissex' | ''>(product?.genero || '')
+  const [pre_venda, setPre_venda] = useState(product?.pre_venda || false)
   const [imageUrl, setImageUrl] = useState(product?.imageUrl || '')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null)
   const [isUploading, setIsUploading] = useState(false)
+  const [createInitialMovement, setCreateInitialMovement] = useState(false)
 
   const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ['suppliers'],
@@ -139,6 +145,18 @@ export function ProductForm({ children, product }: ProductFormProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
+    
+    // Validação: se criar movimentação inicial, preço de compra é obrigatório
+    if (!product && createInitialMovement) {
+      const quantityValue = (e.currentTarget.querySelector('[name="quantity"]') as HTMLInputElement)?.value
+      const quantity = Number(quantityValue || 0)
+      
+      if (quantity > 0 && (!purchasePrice || purchasePrice.trim() === '')) {
+        setError('Preço de Compra é obrigatório quando você marca "Criar movimentação inicial"')
+        return
+      }
+    }
+    
     setIsUploading(true)
 
     try {
@@ -162,12 +180,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
         // Se não há novo arquivo e imageUrl não foi limpo, mantém o existente
         finalImageUrl = imageUrl || (product?.imageUrl || '')
       }
-      
-      console.log('=== FINAL IMAGE URL DEBUG ===')
-      console.log('finalImageUrl:', finalImageUrl)
-      console.log('imageUrl state:', imageUrl)
-      console.log('product?.imageUrl:', product?.imageUrl)
-      console.log('imageFile:', imageFile)
+    
 
       // Cria FormData a partir do formulário usando ref
       const form = formRef.current || e.currentTarget
@@ -181,9 +194,20 @@ export function ProductForm({ children, product }: ProductFormProps) {
 
       // Adiciona a URL da imagem (sempre, mesmo que vazia)
       formData.set('imageUrl', finalImageUrl || '')
-      console.log('=== DEBUG IMAGEM ===')
-      console.log('finalImageUrl:', finalImageUrl)
-      console.log('formData imageUrl:', formData.get('imageUrl'))
+      
+      // Adiciona flag para criar movimentação inicial (apenas para novos produtos)
+      if (!product) {
+        formData.set('createInitialMovement', createInitialMovement ? 'true' : 'false')
+      }
+
+      // Garante que nome_vitrine seja sempre enviado (captura do formulário ou vazio)
+      const nomeVitrineInput = form.querySelector<HTMLInputElement>('input[name="nome_vitrine"]')
+      const nomeVitrineValue = nomeVitrineInput ? nomeVitrineInput.value || '' : ''
+      console.log('=== FORMULÁRIO - nome_vitrine ===')
+      console.log('Input encontrado:', !!nomeVitrineInput)
+      console.log('Valor do input:', nomeVitrineValue)
+      formData.set('nome_vitrine', nomeVitrineValue)
+      console.log('Valor no formData:', formData.get('nome_vitrine'))
 
       // Garante que os campos de vestuário sejam sempre enviados (mesmo que vazios)
       // Isso é necessário para que o backend saiba que os campos foram enviados
@@ -192,7 +216,14 @@ export function ProductForm({ children, product }: ProductFormProps) {
         formData.set('color', color || '')
         formData.set('brand', brand || '')
         formData.set('material', material || '')
+        formData.set('genero', genero || '')
+      } else {
+        // Se não é fornecedor de vestuário, envia vazio para remover o campo
+        formData.set('genero', '')
       }
+      
+      // Adiciona pre_venda (sempre envia, mesmo que false)
+      formData.set('pre_venda', pre_venda ? 'true' : 'false')
 
       startTransition(async () => {
         const result = product
@@ -210,6 +241,8 @@ export function ProductForm({ children, product }: ProductFormProps) {
           setColor('')
           setBrand('')
           setMaterial('')
+          setGenero('')
+          setPre_venda(false)
           setImageUrl('')
           setImageFile(null)
           setImagePreview(null)
@@ -226,8 +259,6 @@ export function ProductForm({ children, product }: ProductFormProps) {
   // Reset form when modal opens/closes or product changes
   React.useEffect(() => {
     if (open && product) {
-      console.log('=== EDITAR PRODUTO DEBUG ===')
-      console.log('product.imageUrl:', product.imageUrl)
       setSelectedSupplier(product.supplierId || '')
       setPurchasePrice(product.purchasePrice?.toString() || '')
       setSalePrice(product.salePrice?.toString() || '')
@@ -235,10 +266,11 @@ export function ProductForm({ children, product }: ProductFormProps) {
       setColor(product.color || '')
       setBrand(product.brand || '')
       setMaterial(product.material || '')
+      setGenero(product.genero || '')
+      setPre_venda(product.pre_venda || false)
       setImageUrl(product.imageUrl || '')
       setImagePreview(product.imageUrl || null)
       setImageFile(null)
-      console.log('imagePreview setado para:', product.imageUrl || null)
     } else if (!open && !product) {
       // Só reseta se não estiver editando
       setSelectedSupplier('')
@@ -248,9 +280,12 @@ export function ProductForm({ children, product }: ProductFormProps) {
       setColor('')
       setBrand('')
       setMaterial('')
+      setGenero('')
+      setPre_venda(false)
       setImageUrl('')
       setImageFile(null)
       setImagePreview(null)
+      setCreateInitialMovement(false)
     }
   }, [open, product])
 
@@ -387,6 +422,46 @@ export function ProductForm({ children, product }: ProductFormProps) {
                 </div>
               )}
 
+              {/* Campo Gênero (para vestuário) */}
+              {isVestuarioSupplier && (
+                <div className="space-y-2">
+                  <Label htmlFor="genero" className="text-sm font-semibold flex items-center gap-2">
+                    <Shirt className="h-4 w-4" />
+                    Gênero
+                  </Label>
+                  <Select value={genero} onValueChange={(value: any) => setGenero(value)}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Selecione o gênero" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Não especificado</SelectItem>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="feminino">Feminino</SelectItem>
+                      <SelectItem value="unissex">Unissex</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Campo Pre-Venda */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <input
+                    type="checkbox"
+                    id="pre_venda"
+                    checked={pre_venda}
+                    onChange={(e) => setPre_venda(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <Label 
+                    htmlFor="pre_venda" 
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    Produto em Pré-venda
+                  </Label>
+                </div>
+              </div>
+
               {/* Upload de Imagem */}
               <div className="space-y-2">
                 <Label htmlFor="image" className="text-sm font-semibold flex items-center gap-2">
@@ -457,6 +532,23 @@ export function ProductForm({ children, product }: ProductFormProps) {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="nome_vitrine" className="text-sm font-semibold flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  Nome na Vitrine
+                </Label>
+                <Input
+                  id="nome_vitrine"
+                  name="nome_vitrine"
+                  defaultValue={product?.nome_vitrine}
+                  placeholder="Ex: Notebook Dell Inspiron 15 (será exibido na vitrine)"
+                  className="h-11"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nome personalizado para exibição na vitrine. Se não preenchido, será usado o nome do produto.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku" className="text-sm font-semibold flex items-center gap-2">
@@ -490,7 +582,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
                 <div className="space-y-2">
                   <Label htmlFor="quantity" className="text-sm font-semibold flex items-center gap-2">
                     <Box className="h-4 w-4" />
-                    Quantidade Atual *
+                    Estoque Inicial *
                   </Label>
                   <Input
                     id="quantity"
@@ -519,11 +611,43 @@ export function ProductForm({ children, product }: ProductFormProps) {
                 </div>
               </div>
 
+              {!product && (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <input
+                      type="checkbox"
+                      id="createInitialMovement"
+                      checked={createInitialMovement}
+                      onChange={(e) => setCreateInitialMovement(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <Label 
+                      htmlFor="createInitialMovement" 
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Criar movimentação inicial para refletir no estoque e estatísticas
+                    </Label>
+                  </div>
+                  {createInitialMovement && (
+                    <Alert className="bg-amber-50 border-amber-200">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-sm text-amber-800">
+                        <strong>Atenção:</strong> Para criar a movimentação inicial, o <strong>Preço de Compra</strong> é obrigatório. 
+                        A movimentação só será registrada se o preço de compra for informado.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="purchasePrice" className="text-sm font-semibold flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
                     Preço de Compra
+                    {!product && createInitialMovement && (
+                      <span className="text-destructive">*</span>
+                    )}
                   </Label>
                   <CurrencyInput
                     id="purchasePrice"
@@ -532,6 +656,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
                     onChange={setPurchasePrice}
                     placeholder="0,00"
                     className="h-11"
+                    required={!product && createInitialMovement}
                   />
                 </div>
                 <div className="space-y-2">

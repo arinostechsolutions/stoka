@@ -230,7 +230,14 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-base md:text-lg">{product.name}</p>
+                              {product.nome_vitrine ? (
+                                <div className="space-y-1">
+                                  <p className="font-medium text-base md:text-lg">{product.nome_vitrine}</p>
+                                  <p className="text-sm text-muted-foreground">{product.name}</p>
+                                </div>
+                              ) : (
+                                <p className="font-medium text-base md:text-lg">{product.name}</p>
+                              )}
                             </div>
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs md:text-sm text-muted-foreground">
@@ -284,6 +291,7 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                             product={{
                               _id: product._id.toString(),
                               name: product.name,
+                              nome_vitrine: product.nome_vitrine,
                               sku: product.sku,
                               category: product.category,
                               supplierId: product.supplierId?._id?.toString() || product.supplierId?.toString(),
@@ -296,6 +304,8 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
                               brand: product.brand,
                               material: product.material,
                               imageUrl: product.imageUrl,
+                              pre_venda: product.pre_venda,
+                              genero: product.genero,
                             }}
                           >
                             <Button variant="outline" size="sm" className="flex-1 md:flex-initial">

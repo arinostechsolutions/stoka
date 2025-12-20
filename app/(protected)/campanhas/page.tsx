@@ -1,49 +1,45 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import connectDB from '@/lib/db'
-import Supplier from '@/lib/models/Supplier'
+import Campaign from '@/lib/models/Campaign'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { SupplierForm } from './components/supplier-form'
+import { CampaignForm } from './components/campaign-form'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { SuppliersListClient } from './components/suppliers-list-client'
+import { CampaignsListClient } from './components/campaigns-list-client'
 
-async function SuppliersList() {
+async function CampaignsList() {
   const session = await getServerSession(authOptions)
   const userId = session!.user!.id
 
   await connectDB()
 
-  const suppliers = await Supplier.find({ userId: userId as any })
+  const campaigns = await Campaign.find({ userId: userId as any })
     .sort({ name: 1 })
     .lean()
 
   // Serializa para JSON simples para evitar warnings do Next.js
-  const serializedSuppliers = JSON.parse(JSON.stringify(suppliers))
+  const serializedCampaigns = JSON.parse(JSON.stringify(campaigns))
 
-  return (
-    <SuppliersListClient 
-      initialSuppliers={serializedSuppliers} 
-    />
-  )
+  return <CampaignsListClient initialCampaigns={serializedCampaigns} />
 }
 
-export default async function FornecedoresPage() {
+export default async function CampanhasPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Fornecedores</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Gerencie seus fornecedores</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Campanhas</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Gerencie suas campanhas de marketing</p>
         </div>
-        <SupplierForm>
+        <CampaignForm>
           <Button size="lg" className="w-full md:w-auto">
             <Plus className="mr-2 h-4 w-4" />
-            Adicionar Fornecedor
+            Adicionar Campanha
           </Button>
-        </SupplierForm>
+        </CampaignForm>
       </div>
 
       <Suspense
@@ -62,7 +58,7 @@ export default async function FornecedoresPage() {
           </div>
         }
       >
-        <SuppliersList />
+        <CampaignsList />
       </Suspense>
     </div>
   )

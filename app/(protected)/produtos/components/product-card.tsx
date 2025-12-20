@@ -25,6 +25,7 @@ interface ProductCardProps {
   product: {
     _id: string
     name: string
+    nome_vitrine?: string
     sku?: string
     category?: string
     supplierId?: {
@@ -40,15 +41,12 @@ interface ProductCardProps {
     brand?: string
     material?: string
     imageUrl?: string
+    pre_venda?: boolean
+    genero?: 'masculino' | 'feminino' | 'unissex'
   }
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  console.log('=== PRODUCT CARD RENDER ===')
-  console.log('product._id:', product._id)
-  console.log('product.name:', product.name)
-  console.log('product.imageUrl:', product.imageUrl)
-  console.log('product completo:', JSON.stringify(product, null, 2))
   
   const isLowStock = product.quantity < product.minQuantity
   const stockPercentage = product.minQuantity > 0 
@@ -82,9 +80,20 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors">
-              {product.name}
-            </CardTitle>
+            {product.nome_vitrine ? (
+              <div className="space-y-1">
+                <CardTitle className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors">
+                  {product.nome_vitrine}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground line-clamp-1">
+                  {product.name}
+                </p>
+              </div>
+            ) : (
+              <CardTitle className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors">
+                {product.name}
+              </CardTitle>
+            )}
           </div>
         </div>
         
@@ -214,6 +223,7 @@ export function ProductCard({ product }: ProductCardProps) {
               product={{
                 _id: product._id,
                 name: product.name,
+                nome_vitrine: product.nome_vitrine,
                 sku: product.sku,
                 category: product.category,
                 supplierId: product.supplierId?._id,
@@ -226,11 +236,8 @@ export function ProductCard({ product }: ProductCardProps) {
                 brand: product.brand,
                 material: product.material,
                 imageUrl: product.imageUrl,
-              }}
-              onProductChange={() => {
-                console.log('=== PRODUCT CARD DEBUG ===')
-                console.log('product.imageUrl:', product.imageUrl)
-                console.log('product completo:', product)
+                pre_venda: product.pre_venda,
+                genero: product.genero,
               }}
             >
               <Button variant="outline" size="sm" className="flex-1 sm:flex-initial sm:px-3">

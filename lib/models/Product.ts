@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model, Types } from 'mongoose'
 export interface IProduct extends Document {
   userId: Types.ObjectId
   name: string
+  nome_vitrine?: string // Nome do produto para exibição na vitrine
   sku?: string
   category?: string
   supplierId?: Types.ObjectId
@@ -16,6 +17,8 @@ export interface IProduct extends Document {
   brand?: string // Marca
   material?: string // Material (algodão, poliéster, etc)
   imageUrl?: string // URL da imagem do produto no Cloudinary
+  pre_venda?: boolean // Se o produto está em pré-venda (true) ou pronta entrega (false)
+  genero?: 'masculino' | 'feminino' | 'unissex' // Gênero do produto
   createdAt: Date
   updatedAt: Date
 }
@@ -31,6 +34,10 @@ const ProductSchema = new Schema<IProduct>(
     name: {
       type: String,
       required: [true, 'Nome do produto é obrigatório'],
+      trim: true,
+    },
+    nome_vitrine: {
+      type: String,
       trim: true,
     },
     sku: {
@@ -86,6 +93,15 @@ const ProductSchema = new Schema<IProduct>(
     },
     imageUrl: {
       type: String,
+      trim: true,
+    },
+    pre_venda: {
+      type: Boolean,
+      default: false,
+    },
+    genero: {
+      type: String,
+      enum: ['masculino', 'feminino', 'unissex'],
       trim: true,
     },
   },

@@ -6,6 +6,7 @@ import Supplier from '@/lib/models/Supplier'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { ProductForm } from './components/product-form'
+import { ImportProductsForm } from './components/import-products-form'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -21,27 +22,19 @@ async function ProductsList() {
     .populate('supplierId', 'name')
     .sort({ name: 1 })
     .lean()
-
-  // Debug: verifica se imageUrl está sendo retornado
-  console.log('=== PRODUTOS DEBUG ===')
-  console.log('Total de produtos:', products.length)
-  if (products.length > 0) {
-    console.log('Primeiro produto:', {
-      name: products[0].name,
-      imageUrl: products[0].imageUrl,
-      hasImageUrl: !!products[0].imageUrl
-    })
-  }
-
   const suppliers = await Supplier.find({ userId: userId as any })
     .select('_id name')
     .sort({ name: 1 })
     .lean()
 
+  // Serializa para JSON simples para evitar warnings do Next.js
+  const serializedProducts = JSON.parse(JSON.stringify(products))
+  const serializedSuppliers = JSON.parse(JSON.stringify(suppliers))
+
   return (
     <ProductsListClient 
-      initialProducts={products} 
-      suppliers={suppliers}
+      initialProducts={serializedProducts} 
+      suppliers={serializedSuppliers}
     />
   )
 }
@@ -54,12 +47,20 @@ export default async function ProdutosPage() {
           <h1 className="text-2xl md:text-3xl font-bold">Produtos</h1>
           <p className="text-sm md:text-base text-muted-foreground">Gerencie seu estoque</p>
         </div>
-        <ProductForm>
-          <Button size="lg" className="w-full md:w-auto">
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Produto
-          </Button>
-        </ProductForm>
+        <div className="flex flex-wrap gap-2">
+          <ProductForm>
+            <Button size="lg" className="w-full md:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Produto
+            </Button>
+          </ProductForm>
+          <ImportProductsForm>
+            <Button size="lg" variant="outline" className="w-full md:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              Importar CSV
+            </Button>
+          </ImportProductsForm>
+        </div>
       </div>
 
       <Suspense

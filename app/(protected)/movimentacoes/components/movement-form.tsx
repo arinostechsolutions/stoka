@@ -25,6 +25,7 @@ import { AlertCircle, Package, Building2, ArrowLeftRight, Hash, FileText, Trendi
 import { createMovement } from '../actions'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
+import { formatCurrency } from '@/lib/utils'
 
 interface MovementFormProps {
   children: React.ReactNode
@@ -63,6 +64,7 @@ export function MovementForm({ children, productId }: MovementFormProps) {
   const [discountValue, setDiscountValue] = useState('')
   const [notes, setNotes] = useState('')
   const [currentStock, setCurrentStock] = useState<number | null>(null)
+  const [productPurchasePrice, setProductPurchasePrice] = useState<number | null>(null)
 
   // Busca produtos filtrados por fornecedor
   const { data: products = [], isLoading, refetch } = useQuery({
@@ -109,19 +111,27 @@ export function MovementForm({ children, productId }: MovementFormProps) {
     }
   }, [selectedSupplier, products, selectedProduct])
 
-  // Atualiza o estoque atual quando o produto é selecionado
+  // Atualiza o estoque atual e preço de compra quando o produto é selecionado
   useEffect(() => {
     if (selectedProduct) {
       const product = products.find((p: any) => p._id === selectedProduct)
       if (product) {
         setCurrentStock(product.quantity || 0)
+        setProductPurchasePrice(product.purchasePrice || null)
+        
+        // Se for entrada e o produto tiver preço de compra, preenche automaticamente
+        if (type === 'entrada' && product.purchasePrice) {
+          setPrice(product.purchasePrice.toFixed(2).replace('.', ','))
+        }
       } else {
         setCurrentStock(null)
+        setProductPurchasePrice(null)
       }
     } else {
       setCurrentStock(null)
+      setProductPurchasePrice(null)
     }
-  }, [selectedProduct, products])
+  }, [selectedProduct, products, type])
 
   // Reseta campos específicos quando o tipo de movimentação muda
   useEffect(() => {
@@ -130,6 +140,10 @@ export function MovementForm({ children, productId }: MovementFormProps) {
       setSalePrice('')
       setDiscountType('')
       setDiscountValue('')
+      // Se o produto selecionado tiver preço de compra, preenche automaticamente
+      if (selectedProduct && productPurchasePrice) {
+        setPrice(productPurchasePrice.toFixed(2).replace('.', ','))
+      }
     } else if (type === 'saida') {
       // Limpa campos de entrada
       setPrice('')
@@ -140,7 +154,7 @@ export function MovementForm({ children, productId }: MovementFormProps) {
       setDiscountType('')
       setDiscountValue('')
     }
-  }, [type])
+  }, [type, selectedProduct, productPurchasePrice])
 
   // Calcula se o estoque ficaria negativo
   const wouldBeNegative = React.useMemo(() => {
@@ -469,6 +483,11 @@ export function MovementForm({ children, productId }: MovementFormProps) {
                     placeholder="0,00"
                     className="h-11"
                   />
+                  {productPurchasePrice !== null && productPurchasePrice !== undefined && (
+                    <p className="text-xs text-muted-foreground">
+                      Preço de compra cadastrado: <span className="font-medium">{formatCurrency(productPurchasePrice)}</span>
+                    </p>
+                  )}
                 </div>
               )}
 

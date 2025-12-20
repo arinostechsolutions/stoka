@@ -1,49 +1,45 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import connectDB from '@/lib/db'
-import Supplier from '@/lib/models/Supplier'
+import Customer from '@/lib/models/Customer'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { SupplierForm } from './components/supplier-form'
+import { CustomerForm } from './components/customer-form'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { SuppliersListClient } from './components/suppliers-list-client'
+import { CustomersListClient } from './components/customers-list-client'
 
-async function SuppliersList() {
+async function CustomersList() {
   const session = await getServerSession(authOptions)
   const userId = session!.user!.id
 
   await connectDB()
 
-  const suppliers = await Supplier.find({ userId: userId as any })
+  const customers = await Customer.find({ userId: userId as any })
     .sort({ name: 1 })
     .lean()
 
   // Serializa para JSON simples para evitar warnings do Next.js
-  const serializedSuppliers = JSON.parse(JSON.stringify(suppliers))
+  const serializedCustomers = JSON.parse(JSON.stringify(customers))
 
-  return (
-    <SuppliersListClient 
-      initialSuppliers={serializedSuppliers} 
-    />
-  )
+  return <CustomersListClient initialCustomers={serializedCustomers} />
 }
 
-export default async function FornecedoresPage() {
+export default async function ClientesPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Fornecedores</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Gerencie seus fornecedores</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Clientes</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Gerencie seus clientes e suas crianças</p>
         </div>
-        <SupplierForm>
+        <CustomerForm>
           <Button size="lg" className="w-full md:w-auto">
             <Plus className="mr-2 h-4 w-4" />
-            Adicionar Fornecedor
+            Adicionar Cliente
           </Button>
-        </SupplierForm>
+        </CustomerForm>
       </div>
 
       <Suspense
@@ -62,7 +58,7 @@ export default async function FornecedoresPage() {
           </div>
         }
       >
-        <SuppliersList />
+        <CustomersList />
       </Suspense>
     </div>
   )
