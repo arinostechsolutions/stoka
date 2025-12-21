@@ -18,6 +18,7 @@ interface Product {
   brand?: string
   size?: string
   quantity: number
+  pre_venda?: boolean
 }
 
 interface ProductSelectorProps {
@@ -129,6 +130,11 @@ export function ProductSelector({ products, selectedProducts, onSelectionChange 
                     )}
                     
                     <div className="flex flex-wrap gap-1 mt-2">
+                      {product.pre_venda && (
+                        <Badge className="bg-orange-500 text-white hover:bg-orange-600 text-xs">
+                          Pré-venda
+                        </Badge>
+                      )}
                       {product.size && (
                         <Badge variant="outline" className="text-xs">
                           <Ruler className="h-2.5 w-2.5 mr-1" />

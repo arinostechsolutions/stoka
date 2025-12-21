@@ -18,6 +18,7 @@ interface Product {
   brand?: string
   size?: string
   quantity: number
+  pre_venda?: boolean
 }
 
 interface Store {
@@ -96,7 +97,7 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor }}>
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 md:px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="text-center mb-8">
           {store.logoUrl && (
@@ -132,7 +133,7 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
 
         {/* Produtos */}
         {products.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8 max-w-sm mx-auto md:max-w-none">
             {products.map((product) => {
               const isSelected = selectedProducts.includes(product._id)
               const displayName = product.nome_vitrine || product.name
@@ -177,6 +178,15 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
                       ) : (
                         <div className="flex items-center justify-center h-full">
                           <Package className="h-12 w-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      
+                      {/* Badge de pré-venda */}
+                      {product.pre_venda && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <Badge className="bg-orange-500 text-white hover:bg-orange-600">
+                            Pré-venda
+                          </Badge>
                         </div>
                       )}
                       
@@ -294,9 +304,6 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
               unoptimized
               priority
             />
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-lg text-base font-medium backdrop-blur-sm pointer-events-none">
-              {expandedImage.alt}
-            </div>
             {/* Botão de fechar */}
             <button
               onClick={(e) => {

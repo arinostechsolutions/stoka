@@ -27,7 +27,6 @@ const PublicStoreSchema = new Schema<IPublicStore>(
       required: [true, 'Slug é obrigatório'],
       trim: true,
       lowercase: true,
-      unique: true,
       match: [/^[a-z0-9-]+$/, 'Slug inválido. Use apenas letras minúsculas, números e hífens'],
     },
     title: {
