@@ -73,3 +73,22 @@ export const campaignSchema = z.object({
   name: z.string().min(1, 'Nome da campanha é obrigatório'),
   description: z.string().optional(),
 })
+
+export const publicStoreSchema = z.object({
+  slug: z.string()
+    .min(3, 'Slug deve ter no mínimo 3 caracteres')
+    .max(50, 'Slug deve ter no máximo 50 caracteres')
+    .regex(/^[a-z0-9-]+$/, 'Slug inválido. Use apenas letras minúsculas, números e hífens'),
+  title: z.string().min(1, 'Título é obrigatório'),
+  description: z.string().optional(),
+  whatsappMessage: z.string().min(1, 'Mensagem do WhatsApp é obrigatória'),
+  phone: z.string()
+    .min(10, 'Número do WhatsApp inválido')
+    .regex(/^\d+$/, 'Número do WhatsApp deve conter apenas dígitos'),
+  selectedProducts: z.array(z.string()).optional().default([]),
+  isActive: z.boolean().optional().default(true),
+  backgroundColor: z.string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Cor de fundo inválida. Use formato hexadecimal (ex: #FFFFFF)')
+    .optional(),
+  logoUrl: z.string().url('URL do logotipo inválida').optional().or(z.literal('')),
+})

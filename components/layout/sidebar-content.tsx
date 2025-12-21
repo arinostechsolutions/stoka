@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { LayoutDashboard, Package, ArrowLeftRight, Settings, LogOut, Building2, BarChart3, FileText, Store, Users, Megaphone } from 'lucide-react'
+import { LayoutDashboard, Package, ArrowLeftRight, Settings, LogOut, Building2, BarChart3, FileText, Store, Users, Megaphone, Globe } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Vitrine', href: '/vitrine', icon: Store },
+  { name: 'Minha Loja', href: '/minha-loja', icon: Globe },
   { name: 'Produtos', href: '/produtos', icon: Package },
   { name: 'Clientes', href: '/clientes', icon: Users },
   { name: 'Fornecedores', href: '/fornecedores', icon: Building2 },

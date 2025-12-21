@@ -7,6 +7,7 @@ export interface IUser extends Document {
   cnpj?: string
   companyName?: string // Razão Social
   tradeName?: string // Nome Fantasia
+  phone?: string // Telefone/WhatsApp
   createdAt: Date
   updatedAt: Date
 }
@@ -39,6 +40,10 @@ const UserSchema = new Schema<IUser>(
       trim: true,
     },
     tradeName: {
+      type: String,
+      trim: true,
+    },
+    phone: {
       type: String,
       trim: true,
     },
