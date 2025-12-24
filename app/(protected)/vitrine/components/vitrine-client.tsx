@@ -13,11 +13,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import Image from 'next/image'
-import { Filter, ShoppingCart, Package, Users, Sparkles, Phone, Baby, ChevronLeft, ChevronRight, MapPin, Instagram } from 'lucide-react'
-import { formatCurrency, formatPhone } from '@/lib/utils'
+import { Filter, ShoppingCart, Package, Users, Sparkles, Phone, Baby, ChevronLeft, ChevronRight, MapPin, Instagram, MessageCircle, FileDown } from 'lucide-react'
+import { formatCurrency, formatPhone, getInstagramUrl, getWhatsAppUrl } from '@/lib/utils'
 import { SaleModal } from './sale-modal'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ExportPdfModal } from './export-pdf-modal'
 
 interface VitrineClientProps {
   initialProducts: any[]
@@ -37,6 +38,7 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
   const [preVendaFilter, setPreVendaFilter] = useState<'all' | 'pre_venda' | 'pronta_entrega'>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [exportPdfModalOpen, setExportPdfModalOpen] = useState(false)
   const itemsPerPage = 6
 
   // Cliente selecionado
@@ -58,8 +60,18 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
     // Tamanhos das crianças do cliente selecionado
     if (customer && customer.children) {
       customer.children.forEach((child: any) => {
-        if (child.size && child.size.trim() !== '') {
-          sizes.add(child.size)
+        if (child.size) {
+          // Se for array, adiciona cada tamanho
+          if (Array.isArray(child.size)) {
+            child.size.forEach((size: string) => {
+              if (size && size.trim() !== '') {
+                sizes.add(size.trim())
+              }
+            })
+          } else if (typeof child.size === 'string' && child.size.trim() !== '') {
+            // Se for string (legado), adiciona direto
+            sizes.add(child.size.trim())
+          }
         }
       })
     }
@@ -96,19 +108,39 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
       if (customer && customer.children && customer.children.length > 0) {
         // Verifica se o produto corresponde a alguma criança
         const matchesChild = customer.children.some((child: any) => {
-          // Verifica tamanho
-          if (child.size && product.size && child.size !== product.size) return false
-          
-          // Verifica gênero
-          if (child.gender && product.genero) {
-            if (product.genero !== 'unissex' && product.genero !== child.gender) return false
+          // Verifica tamanho - se a criança tem tamanho e o produto tem tamanho, devem corresponder
+          if (child.size && product.size) {
+            let childSizes: string[] = []
+            
+            // Normaliza tamanhos da criança para array
+            if (Array.isArray(child.size)) {
+              childSizes = child.size.map((s: string) => s.trim().toLowerCase())
+            } else if (typeof child.size === 'string') {
+              // Se ainda for string (legado), separa por vírgula
+              childSizes = child.size.split(',').map((s: string) => s.trim().toLowerCase()).filter((s: string) => s.length > 0)
+            }
+            
+            // Se a criança tem tamanhos definidos, verifica se o produto corresponde a algum
+            if (childSizes.length > 0) {
+              const productSize = product.size.trim().toLowerCase()
+              if (!childSizes.includes(productSize)) return false
+            }
           }
           
+          // Verifica gênero - se a criança tem gênero e o produto tem gênero
+          if (child.gender && product.genero) {
+            // Produtos unissex servem para qualquer gênero
+            if (product.genero === 'unissex') return true
+            // Caso contrário, o gênero deve corresponder
+            if (product.genero !== child.gender) return false
+          }
+          
+          // Se chegou aqui, o produto corresponde a esta criança
           return true
         })
         
-        // Por enquanto, mostra todos os produtos mesmo que não correspondam
-        // Pode ser ajustado para filtrar apenas produtos que correspondem
+        // Se nenhuma criança corresponde ao produto, filtra ele
+        if (!matchesChild) return false
       }
 
       return true
@@ -218,7 +250,7 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
                       <li key={idx}>
                         {child.name}
                         {child.age && ` (${child.age} anos)`}
-                        {child.size && ` - Tamanho: ${child.size}`}
+                        {child.size && ` - Tamanho: ${Array.isArray(child.size) ? child.size.join(', ') : child.size}`}
                         {child.gender && ` - ${child.gender === 'masculino' ? 'Masculino' : 'Feminino'}`}
                       </li>
                     ))}
@@ -312,21 +344,32 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="text-sm text-muted-foreground">
                 {filteredProducts.length} produto(s) encontrado(s)
               </div>
-              {recommendedCustomers.length > 0 && (
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setRecommendedCustomersOpen(true)}
+                  onClick={() => setExportPdfModalOpen(true)}
                   className="gap-2"
                 >
-                  <Sparkles className="h-4 w-4" />
-                  Ver Clientes Recomendados ({recommendedCustomers.length})
+                  <FileDown className="h-4 w-4" />
+                  Exportar para PDF
                 </Button>
-              )}
+                {recommendedCustomers.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRecommendedCustomersOpen(true)}
+                    className="gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Ver Clientes Recomendados ({recommendedCustomers.length})
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -505,6 +548,14 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
         open={saleModalOpen}
         onOpenChange={setSaleModalOpen}
         product={selectedProduct}
+        allProducts={filteredProducts}
+      />
+
+      <ExportPdfModal
+        open={exportPdfModalOpen}
+        onOpenChange={setExportPdfModalOpen}
+        products={initialProducts}
+        customers={initialCustomers}
       />
 
       {/* Modal de Clientes Recomendados */}
@@ -544,10 +595,15 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
                           </div>
                           
                           {customer.phone && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-2">
-                              <Phone className="h-3 w-3" />
+                            <a
+                              href={getWhatsAppUrl(customer.phone)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                            >
+                              <MessageCircle className="h-3 w-3" />
                               {formatPhone(customer.phone)}
-                            </p>
+                            </a>
                           )}
 
                           {customer.children && customer.children.length > 0 && (
@@ -569,7 +625,11 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
                                       <div className="font-medium">{child.name}</div>
                                       <div className="flex gap-2 mt-1">
                                         {child.age && <span>Idade: {child.age} anos</span>}
-                                        {child.size && <span>Tamanho: {child.size}</span>}
+                                        {child.size && (
+                                          <span>
+                                            Tamanho: {Array.isArray(child.size) ? child.size.join(', ') : child.size}
+                                          </span>
+                                        )}
                                         {child.gender && (
                                           <Badge variant="secondary" className="text-xs">
                                             {child.gender === 'masculino' ? 'M' : 'F'}
@@ -621,17 +681,27 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {selectedCustomerDetail.phone && (
-                    <div className="flex items-center gap-2 text-sm md:text-base">
-                      <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <a
+                      href={getWhatsAppUrl(selectedCustomerDetail.phone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm md:text-base hover:text-primary transition-colors"
+                    >
+                      <MessageCircle className="h-4 w-4 text-muted-foreground shrink-0" />
                       <span>{formatPhone(selectedCustomerDetail.phone)}</span>
-                    </div>
+                    </a>
                   )}
 
                   {selectedCustomerDetail.instagram && (
-                    <div className="flex items-center gap-2 text-sm md:text-base">
+                    <a
+                      href={getInstagramUrl(selectedCustomerDetail.instagram)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm md:text-base hover:text-primary transition-colors"
+                    >
                       <Instagram className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span>{selectedCustomerDetail.instagram}</span>
-                    </div>
+                      <span>@{selectedCustomerDetail.instagram}</span>
+                    </a>
                   )}
 
                   {selectedCustomerDetail.address && (
@@ -662,7 +732,11 @@ export function VitrineClient({ initialProducts, initialCustomers }: VitrineClie
                         <div className="font-medium">{child.name}</div>
                         <div className="flex flex-wrap gap-2 text-sm">
                           {child.age && <span>Idade: {child.age} anos</span>}
-                          {child.size && <span>Tamanho: {child.size}</span>}
+                          {child.size && (
+                            <span>
+                              Tamanho: {Array.isArray(child.size) ? child.size.join(', ') : child.size}
+                            </span>
+                          )}
                           {child.gender && (
                             <Badge variant="secondary">
                               {child.gender === 'masculino' ? 'Masculino' : 'Feminino'}

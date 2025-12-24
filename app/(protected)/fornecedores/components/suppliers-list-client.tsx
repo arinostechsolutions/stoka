@@ -150,6 +150,10 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
                         ? 'Todas as categorias'
                         : selectedCategory === 'vestuario'
                         ? 'Vestuário'
+                        : selectedCategory === 'joia'
+                        ? 'Jóia'
+                        : selectedCategory === 'sapato'
+                        ? 'Sapato'
                         : selectedCategory === 'geral'
                         ? 'Geral'
                         : ''
@@ -160,6 +164,8 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
                   <SelectItem value="all">Todas as categorias</SelectItem>
                   <SelectItem value="geral">Geral</SelectItem>
                   <SelectItem value="vestuario">Vestuário</SelectItem>
+                  <SelectItem value="joia">Jóia</SelectItem>
+                  <SelectItem value="sapato">Sapato</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -102,6 +102,9 @@ export default function LandingPage() {
             <Link href="#benefits" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Benefícios
             </Link>
+            <Link href="/precos" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Preços
+            </Link>
             <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Entrar
             </Link>

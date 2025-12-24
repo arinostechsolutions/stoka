@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -17,7 +18,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 
-export function DeleteCustomerButton({ customerId }: { customerId: string }) {
+export function DeleteCustomerButton({ 
+  customerId, 
+  children 
+}: { 
+  customerId: string
+  children?: React.ReactNode
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -31,9 +38,11 @@ export function DeleteCustomerButton({ customerId }: { customerId: string }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" disabled={isPending}>
-          <Trash2 className="h-3 w-3" />
-        </Button>
+        {children || (
+          <Button variant="destructive" size="sm" disabled={isPending}>
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        )}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

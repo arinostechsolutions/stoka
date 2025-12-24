@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Package, Award, Ruler, ShoppingCart, MessageCircle, Check, X, ZoomIn } from 'lucide-react'
+import { Package, Award, Ruler, ShoppingCart, MessageCircle, Check, X } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 interface Product {
@@ -124,8 +124,7 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
                 <span>Clique na peça para selecionar e depois clique/toque no botão &quot;Falar Comigo&quot; para me chamar no WhatsApp!</span>
               </p>
               <p className="flex items-center justify-center gap-2 text-blue-700">
-                <ZoomIn className="h-4 w-4" />
-                <span>Para ver os detalhes, clique ou toque na imagem do produto para ampliar</span>
+                <span>Para ver os detalhes, use o link &quot;Ver imagem em tamanho original&quot; no card do produto</span>
               </p>
             </div>
           </div>
@@ -133,7 +132,7 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
 
         {/* Produtos */}
         {products.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8 max-w-sm mx-auto md:max-w-none">
+          <div className="grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8 max-w-xs mx-auto md:max-w-none">
             {products.map((product) => {
               const isSelected = selectedProducts.includes(product._id)
               const displayName = product.nome_vitrine || product.name
@@ -150,31 +149,15 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
                 >
                   <CardContent className="p-0">
                     {/* Imagem */}
-                    <div className="relative w-full h-56 bg-muted group overflow-hidden">
+                    <div className="relative w-full h-40 md:h-56 bg-muted overflow-hidden">
                       {product.imageUrl ? (
-                        <>
-                          <Image
-                            src={product.imageUrl}
-                            alt={displayName}
-                            fill
-                            className="object-cover cursor-pointer transition-transform duration-300 group-hover:scale-110"
-                            unoptimized
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setExpandedImage({ url: product.imageUrl!, alt: displayName })
-                            }}
-                          />
-                          {/* Ícone de zoom no hover */}
-                          <div 
-                            className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setExpandedImage({ url: product.imageUrl!, alt: displayName })
-                            }}
-                          >
-                            <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                        </>
+                        <Image
+                          src={product.imageUrl}
+                          alt={displayName}
+                          fill
+                          className="object-cover transition-transform duration-300"
+                          unoptimized
+                        />
                       ) : (
                         <div className="flex items-center justify-center h-full">
                           <Package className="h-12 w-12 text-muted-foreground" />
@@ -202,16 +185,16 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
                     </div>
 
                     {/* Informações */}
-                    <div className="p-5 bg-white">
-                      <h3 className="font-bold text-lg mb-2 line-clamp-2 text-gray-900">{displayName}</h3>
+                    <div className="p-3 md:p-5 bg-white">
+                      <h3 className="font-bold text-base md:text-lg mb-1 md:mb-2 line-clamp-2 text-gray-900">{displayName}</h3>
                       
                       {product.nome_vitrine && (
-                        <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
+                        <p className="text-xs md:text-sm text-muted-foreground line-clamp-1 mb-1 md:mb-2">
                           {product.name}
                         </p>
                       )}
 
-                      <div className="flex flex-wrap gap-2 mb-3">
+                      <div className="flex flex-wrap gap-1.5 md:gap-2 mb-2 md:mb-3">
                         {product.size && (
                           <Badge variant="outline" className="text-xs">
                             <Ruler className="h-3 w-3 mr-1" />
@@ -226,13 +209,28 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
                         )}
                       </div>
 
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                      {/* Link para ver imagem */}
+                      {product.imageUrl && (
+                        <div className="mb-2 md:mb-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setExpandedImage({ url: product.imageUrl!, alt: displayName })
+                            }}
+                            className="text-xs text-primary hover:text-primary/80 underline transition-colors"
+                          >
+                            Ver imagem em tamanho original
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-100">
                         {product.salePrice && (
-                          <p className="text-2xl font-bold text-primary">
+                          <p className="text-xl md:text-2xl font-bold text-primary">
                             {formatCurrency(product.salePrice)}
                           </p>
                         )}
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs md:text-sm text-muted-foreground">
                           Estoque: {product.quantity}
                         </p>
                       </div>
@@ -279,7 +277,14 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
         <footer className="mt-12 pt-8 pb-4 text-center border-t border-gray-200/50">
           <p className="text-sm text-muted-foreground">
             Powered by{' '}
-            <span className="font-semibold text-foreground">AG2 Soluções Tecnológicas</span>
+            <a
+              href="https://wa.me/5522992645933"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-foreground hover:text-primary transition-colors underline"
+            >
+              AG2 Soluções Tecnológicas
+            </a>
           </p>
         </footer>
       </div>

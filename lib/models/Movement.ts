@@ -17,6 +17,11 @@ export interface IMovement extends Document {
   discountValue?: number // Valor do desconto (percentual ou fixo)
   totalRevenue?: number // Receita total após desconto (quantity * salePrice - discount)
   campaignId?: Types.ObjectId // Campanha associada à venda
+  customerId?: Types.ObjectId // Cliente associado à venda
+  paymentMethod?: 'cartao_credito' | 'cartao_debito' | 'pix' | 'pix_parcelado' // Meio de pagamento
+  installmentsCount?: number // Quantidade de parcelas (apenas para pix_parcelado)
+  installmentDueDate?: Date // Data limite para pagamento da primeira parcela (apenas para pix_parcelado)
+  saleGroupId?: Types.ObjectId // ID para agrupar múltiplas vendas (quando uma venda tem múltiplos produtos)
   notes?: string
   createdAt: Date
 }
@@ -88,6 +93,29 @@ const MovementSchema = new Schema<IMovement>(
       ref: 'Campaign',
       index: true,
     },
+    customerId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Customer',
+      index: true,
+      required: false,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['cartao_credito', 'cartao_debito', 'pix', 'pix_parcelado'],
+      required: false,
+    },
+    installmentsCount: {
+      type: Number,
+      min: [1, 'Quantidade de parcelas deve ser pelo menos 1'],
+    },
+    installmentDueDate: {
+      type: Date,
+    },
+    saleGroupId: {
+      type: Schema.Types.ObjectId,
+      index: true,
+      required: false,
+    },
     notes: {
       type: String,
       trim: true,
@@ -102,6 +130,8 @@ MovementSchema.index({ userId: 1, createdAt: -1 })
 MovementSchema.index({ productId: 1, createdAt: -1 })
 MovementSchema.index({ userId: 1, supplierId: 1 })
 MovementSchema.index({ userId: 1, type: 1, createdAt: -1 })
+MovementSchema.index({ customerId: 1, createdAt: -1 })
+MovementSchema.index({ saleGroupId: 1 })
 
 const Movement: Model<IMovement> = mongoose.models.Movement || mongoose.model<IMovement>('Movement', MovementSchema)
 

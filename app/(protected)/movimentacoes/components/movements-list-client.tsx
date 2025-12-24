@@ -347,7 +347,16 @@ export function MovementsListClient({ initialMovements, products, suppliers }: M
                     {movement.type === 'entrada' && movement.totalPrice && (
                       <div className="mt-2 text-xs md:text-sm">
                         <span className="text-muted-foreground">
-                          Total gasto: <span className="font-semibold text-red-600">{formatCurrency(movement.totalPrice)}</span>
+                          {/* Se for pagamento de parcela, mostra como recebido, senão como gasto */}
+                          {movement.notes && movement.notes.includes('Venda parcelada') ? (
+                            <>
+                              Total recebido: <span className="font-semibold text-green-600">{formatCurrency(movement.totalPrice)}</span>
+                            </>
+                          ) : (
+                            <>
+                              Total gasto: <span className="font-semibold text-red-600">{formatCurrency(movement.totalPrice)}</span>
+                            </>
+                          )}
                         </span>
                       </div>
                     )}

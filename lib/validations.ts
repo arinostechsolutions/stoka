@@ -29,6 +29,13 @@ export const productSchema = z.object({
   imageUrl: z.string().url('URL da imagem inválida').optional().or(z.literal('')),
   pre_venda: z.boolean().optional().default(false),
   genero: z.enum(['masculino', 'feminino', 'unissex']).optional(),
+  // Campos específicos para jóias
+  tipo_joia: z.string().optional(),
+  pedra: z.string().optional(),
+  quilate: z.number().min(0, 'Quilate não pode ser negativo').optional(),
+  // Campos específicos para sapatos
+  numeração: z.string().optional(),
+  tipo_sapato: z.string().optional(),
 })
 
 export const movementSchema = z.object({
@@ -41,12 +48,14 @@ export const movementSchema = z.object({
   discountType: z.enum(['percent', 'fixed']).optional(),
   discountValue: z.number().min(0, 'Valor do desconto não pode ser negativo').optional(),
   campaignId: z.string().optional(),
+  customerId: z.string().optional(),
+  paymentMethod: z.enum(['cartao_credito', 'cartao_debito', 'pix', 'pix_parcelado']).optional().nullable(),
   notes: z.string().optional(),
 })
 
 export const supplierSchema = z.object({
   name: z.string().min(1, 'Nome do fornecedor é obrigatório'),
-  category: z.enum(['geral', 'vestuario']).optional().default('geral'),
+  category: z.enum(['geral', 'vestuario', 'joia', 'sapato']).optional().default('geral'),
   cnpj: z.string().optional(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().optional(),
@@ -66,6 +75,7 @@ export const customerSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   instagram: z.string().optional(),
+  notes: z.string().optional(),
   children: z.array(childSchema).optional().default([]),
 })
 

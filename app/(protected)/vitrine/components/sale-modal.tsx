@@ -21,15 +21,26 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, ShoppingCart, DollarSign, Percent, Tag, Package, Megaphone } from 'lucide-react'
-import { createMovement } from '@/app/(protected)/movimentacoes/actions'
-import { formatCurrency } from '@/lib/utils'
+import { AlertCircle, ShoppingCart, DollarSign, Percent, Tag, Package, Megaphone, User, CreditCard, MessageCircle, Plus, X } from 'lucide-react'
+import { createSale } from '@/app/(protected)/movimentacoes/actions'
+import { formatCurrency, formatPhone, getWhatsAppUrl } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
+import { Card } from '@/components/ui/card'
 
 interface SaleModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   product: any
+  allProducts?: any[] // Todos os produtos disponíveis para adicionar à venda
+}
+
+interface SaleItem {
+  productId: string
+  product: any
+  quantity: number
+  salePrice: number
+  discountType?: 'percent' | 'fixed'
+  discountValue?: number
 }
 
 async function fetchCampaigns() {
@@ -38,92 +49,219 @@ async function fetchCampaigns() {
   return res.json()
 }
 
-export function SaleModal({ open, onOpenChange, product }: SaleModalProps) {
+async function fetchCustomers() {
+  const res = await fetch('/api/customers')
+  if (!res.ok) throw new Error('Erro ao carregar clientes')
+  return res.json()
+}
+
+async function fetchProducts() {
+  const res = await fetch('/api/products')
+  if (!res.ok) throw new Error('Erro ao carregar produtos')
+  return res.json()
+}
+
+export function SaleModal({ open, onOpenChange, product, allProducts }: SaleModalProps) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
-  const [quantity, setQuantity] = useState('1')
-  const [salePrice, setSalePrice] = useState(product?.salePrice?.toString() || '')
-  const [discountType, setDiscountType] = useState<'percent' | 'fixed' | ''>('')
-  const [discountValue, setDiscountValue] = useState('')
+  const [saleItems, setSaleItems] = useState<SaleItem[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<string>('')
+  const [selectedCustomer, setSelectedCustomer] = useState<string>('')
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'cartao_credito' | 'cartao_debito' | 'pix' | 'pix_parcelado' | ''>('')
+  const [installmentsCount, setInstallmentsCount] = useState<number>(1)
+  const [installmentDueDate, setInstallmentDueDate] = useState<string>('')
+  const [downPayment, setDownPayment] = useState<string>('0')
   const [notes, setNotes] = useState('')
-  const [quantityError, setQuantityError] = useState('')
+  const [showAddProduct, setShowAddProduct] = useState(false)
+  const [productSearch, setProductSearch] = useState('')
 
   const { data: campaigns = [], isLoading: isLoadingCampaigns } = useQuery({
     queryKey: ['campaigns'],
     queryFn: fetchCampaigns,
   })
 
-  // Calcula valores
-  const basePrice = product?.salePrice || 0
-  const quantityNum = Number(quantity) || 0
-  const subtotal = basePrice * quantityNum
-  const discountAmount = useMemo(() => {
-    if (!discountType || !discountValue) return 0
-    const discount = Number(discountValue) || 0
-    if (discountType === 'percent') {
-      return subtotal * (discount / 100)
-    }
-    return discount
-  }, [discountType, discountValue, subtotal])
-  const total = Math.max(0, subtotal - discountAmount)
+  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
+    queryKey: ['customers'],
+    queryFn: fetchCustomers,
+  })
 
-  // Reset quando o modal abre/fecha ou produto muda
+  const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: fetchProducts,
+    enabled: showAddProduct,
+  })
+
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearch) return customers
+    const search = customerSearch.toLowerCase()
+    return customers.filter((c: any) => 
+      c.name.toLowerCase().includes(search) ||
+      c.phone?.toLowerCase().includes(search) ||
+      c.instagram?.toLowerCase().includes(search)
+    )
+  }, [customers, customerSearch])
+
+  const filteredProducts = useMemo(() => {
+    if (!productSearch) return products
+    const search = productSearch.toLowerCase()
+    return products.filter((p: any) => 
+      p.name.toLowerCase().includes(search) ||
+      p.nome_vitrine?.toLowerCase().includes(search) ||
+      p.brand?.toLowerCase().includes(search)
+    )
+  }, [products, productSearch])
+
+  // Inicializa com o produto selecionado quando o modal abre
   React.useEffect(() => {
     if (open && product) {
-      setSalePrice(product.salePrice?.toString() || '')
-      setQuantity('1')
-      setDiscountType('')
-      setDiscountValue('')
+      setSaleItems([{
+        productId: product._id,
+        product: product,
+        quantity: 1,
+        salePrice: product.salePrice || 0,
+        discountType: undefined,
+        discountValue: undefined,
+      }])
       setSelectedCampaign('')
+      setSelectedCustomer('')
+      setCustomerSearch('')
+      setPaymentMethod('')
+      setInstallmentsCount(1)
+      setInstallmentDueDate('')
+      setDownPayment('0')
       setNotes('')
       setError('')
-      setQuantityError('')
+      setShowAddProduct(false)
+      setProductSearch('')
     }
   }, [open, product])
+
+  // Calcula totais
+  const totals = useMemo(() => {
+    let subtotal = 0
+    let totalDiscount = 0
+    let total = 0
+
+    saleItems.forEach(item => {
+      const itemSubtotal = item.salePrice * item.quantity
+      subtotal += itemSubtotal
+
+      let itemDiscount = 0
+      if (item.discountType && item.discountValue !== undefined) {
+        if (item.discountType === 'percent') {
+          itemDiscount = itemSubtotal * (item.discountValue / 100)
+        } else {
+          itemDiscount = item.discountValue
+        }
+      }
+      totalDiscount += itemDiscount
+    })
+
+    total = Math.max(0, subtotal - totalDiscount)
+
+    return { subtotal, totalDiscount, total }
+  }, [saleItems])
+
+  const addProductToSale = (productToAdd: any) => {
+    // Verifica se o produto já está na lista
+    if (saleItems.some(item => item.productId === productToAdd._id)) {
+      setError('Este produto já está na venda')
+      return
+    }
+
+    setSaleItems([...saleItems, {
+      productId: productToAdd._id,
+      product: productToAdd,
+      quantity: 1,
+      salePrice: productToAdd.salePrice || 0,
+      discountType: undefined,
+      discountValue: undefined,
+    }])
+    setProductSearch('')
+    setShowAddProduct(false)
+    setError('')
+  }
+
+  const removeProductFromSale = (productId: string) => {
+    if (saleItems.length === 1) {
+      setError('A venda deve ter pelo menos um produto')
+      return
+    }
+    setSaleItems(saleItems.filter(item => item.productId !== productId))
+  }
+
+  const updateSaleItem = (productId: string, field: keyof SaleItem, value: any) => {
+    setSaleItems(saleItems.map(item => {
+      if (item.productId === productId) {
+        return { ...item, [field]: value }
+      }
+      return item
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!product) {
-      setError('Produto não selecionado')
+    if (saleItems.length === 0) {
+      setError('Adicione pelo menos um produto à venda')
       return
     }
 
-    if (quantityNum <= 0) {
-      setError('Quantidade deve ser maior que zero')
-      setQuantityError('Quantidade deve ser maior que zero')
-      return
-    }
+    // Valida todos os itens
+    for (const item of saleItems) {
+      if (item.quantity <= 0) {
+        setError(`Quantidade inválida para ${item.product.name || item.product.nome_vitrine}`)
+        return
+      }
 
-    if (quantityNum > product.quantity) {
-      setError(`Quantidade não pode ser maior que o estoque disponível (${product.quantity} unidade${product.quantity !== 1 ? 's' : ''})`)
-      setQuantityError(`Estoque disponível: ${product.quantity} unidade${product.quantity !== 1 ? 's' : ''}`)
-      return
-    }
-    
-    setQuantityError('')
+      if (item.quantity > item.product.quantity) {
+        setError(`Quantidade insuficiente para ${item.product.name || item.product.nome_vitrine}. Estoque disponível: ${item.product.quantity}`)
+        return
+      }
 
-    if (!salePrice || Number(salePrice.replace(/[^\d,.-]/g, '').replace(',', '.')) <= 0) {
-      setError('Preço de venda é obrigatório')
-      return
+      if (!item.salePrice || item.salePrice <= 0) {
+        setError(`Preço de venda inválido para ${item.product.name || item.product.nome_vitrine}`)
+        return
+      }
     }
 
     const formData = new FormData()
-    formData.set('productId', product._id)
-    formData.set('type', 'saida')
-    formData.set('quantity', quantity)
-    formData.set('salePrice', salePrice)
     
-    if (discountType && discountValue) {
-      formData.set('discountType', discountType)
-      formData.set('discountValue', discountValue)
-    }
+    // Prepara os itens da venda
+    const items = saleItems.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      salePrice: item.salePrice,
+      discountType: item.discountType,
+      discountValue: item.discountValue,
+    }))
+    
+    formData.set('items', JSON.stringify(items))
     
     if (selectedCampaign) {
       formData.set('campaignId', selectedCampaign)
+    }
+    
+    if (selectedCustomer) {
+      formData.set('customerId', selectedCustomer)
+    }
+    
+    if (paymentMethod) {
+      formData.set('paymentMethod', paymentMethod)
+    }
+    
+    // Adiciona informações de parcelamento se for PIX Parcelado
+    if (paymentMethod === 'pix_parcelado') {
+      formData.set('installmentsCount', installmentsCount.toString())
+      if (installmentDueDate) {
+        formData.set('installmentDueDate', installmentDueDate)
+      }
+      if (downPayment) {
+        formData.set('downPayment', downPayment)
+      }
     }
     
     if (notes) {
@@ -131,7 +269,7 @@ export function SaleModal({ open, onOpenChange, product }: SaleModalProps) {
     }
 
     startTransition(async () => {
-      const result = await createMovement(formData)
+      const result = await createSale(formData)
 
       if (result.error) {
         setError(result.error)
@@ -146,11 +284,11 @@ export function SaleModal({ open, onOpenChange, product }: SaleModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="h-6 w-6 text-primary" />
-            Registrar Venda
+            Registrar Venda {saleItems.length > 1 && `(${saleItems.length} produtos)`}
           </DialogTitle>
         </DialogHeader>
 
@@ -162,176 +300,247 @@ export function SaleModal({ open, onOpenChange, product }: SaleModalProps) {
             </Alert>
           )}
 
-          {/* Informações do Produto */}
-          <div className="p-4 bg-muted rounded-lg space-y-2">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold">{product.name}</span>
-            </div>
-            {product.brand && (
-              <p className="text-sm text-muted-foreground">Marca: {product.brand}</p>
-            )}
-            {product.size && (
-              <p className="text-sm text-muted-foreground">Tamanho: {product.size}</p>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Estoque disponível: <span className="font-semibold">{product.quantity}</span>
-            </p>
-          </div>
-
-          {/* Quantidade */}
-          <div className="space-y-2">
-            <Label htmlFor="quantity" className="text-sm font-semibold">
-              Quantidade *
-            </Label>
-            <Input
-              id="quantity"
-              type="number"
-              min="1"
-              max={product.quantity}
-              value={quantity}
-              onChange={(e) => {
-                const value = e.target.value
-                const numValue = Number(value)
-                
-                if (value === '') {
-                  setQuantity('')
-                  setQuantityError('')
-                  return
-                }
-                
-                if (numValue <= 0) {
-                  setQuantityError('Quantidade deve ser maior que zero')
-                  setQuantity(value)
-                  return
-                }
-                
-                if (numValue > product.quantity) {
-                  setQuantityError(`Estoque disponível: ${product.quantity} unidade${product.quantity !== 1 ? 's' : ''}`)
-                  setQuantity(value)
-                  return
-                }
-                
-                setQuantityError('')
-                setQuantity(value)
-              }}
-              onBlur={(e) => {
-                const numValue = Number(e.target.value)
-                if (numValue > product.quantity) {
-                  setQuantity(product.quantity.toString())
-                  setQuantityError('')
-                }
-              }}
-              required
-              className={`h-11 ${quantityError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-              title={quantityError || `Máximo: ${product.quantity} unidade${product.quantity !== 1 ? 's' : ''}`}
-            />
-            {quantityError && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {quantityError}
-              </p>
-            )}
-            {!quantityError && product.quantity > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Estoque disponível: {product.quantity} unidade{product.quantity !== 1 ? 's' : ''}
-              </p>
-            )}
-          </div>
-
-          {/* Preço de Venda */}
-          <div className="space-y-2">
-            <Label htmlFor="salePrice" className="text-sm font-semibold flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Preço de Venda *
-            </Label>
-            <CurrencyInput
-              id="salePrice"
-              value={salePrice}
-              onChange={setSalePrice}
-              placeholder="0,00"
-              className="h-11"
-              required
-            />
-          </div>
-
-          {/* Desconto */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="discountType" className="text-sm font-semibold flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                Tipo de Desconto
-              </Label>
-              <Select value={discountType} onValueChange={(value: any) => {
-                setDiscountType(value)
-                setDiscountValue('')
-              }}>
-                <SelectTrigger>
-                  <SelectValue 
-                    placeholder="Selecione um tipo"
-                    displayValue={discountType === 'percent' ? 'Percentual (%)' : discountType === 'fixed' ? 'Valor Fixo (R$)' : undefined}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Sem desconto</SelectItem>
-                  <SelectItem value="percent">Percentual (%)</SelectItem>
-                  <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Lista de Produtos */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-semibold">Produtos na Venda</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddProduct(!showAddProduct)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Adicionar Produto
+              </Button>
             </div>
 
-            {discountType && (
-              <div className="space-y-2">
-                <Label htmlFor="discountValue" className="text-sm font-semibold flex items-center gap-2">
-                  {discountType === 'percent' ? (
-                    <Percent className="h-4 w-4" />
-                  ) : (
-                    <DollarSign className="h-4 w-4" />
-                  )}
-                  Valor do Desconto *
-                </Label>
-                {discountType === 'percent' ? (
-                  <Input
-                    id="discountValue"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
-                    placeholder="0"
-                    className="h-11"
-                    required
-                  />
-                ) : (
-                  <CurrencyInput
-                    id="discountValue"
-                    value={discountValue}
-                    onChange={setDiscountValue}
-                    placeholder="0,00"
-                    className="h-11"
-                    required
-                  />
+            {showAddProduct && (
+              <Card className="p-4 space-y-2">
+                <Input
+                  placeholder="Buscar produto por nome, nome vitrine ou marca..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="h-10"
+                />
+                {productSearch && filteredProducts.length > 0 && (
+                  <div className="border rounded-md max-h-48 overflow-y-auto bg-background">
+                    {filteredProducts
+                      .filter((p: any) => !saleItems.some(item => item.productId === p._id))
+                      .map((p: any) => (
+                        <div
+                          key={p._id}
+                          onClick={() => addProductToSale(p)}
+                          className="p-2 cursor-pointer hover:bg-muted transition-colors"
+                        >
+                          <div className="font-medium">{p.name || p.nome_vitrine}</div>
+                          {p.brand && <div className="text-xs text-muted-foreground">Marca: {p.brand}</div>}
+                          <div className="text-xs text-muted-foreground">
+                            Estoque: {p.quantity} | Preço: {formatCurrency(p.salePrice || 0)}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 )}
-              </div>
+              </Card>
             )}
+
+            {saleItems.map((item, index) => {
+              const itemSubtotal = item.salePrice * item.quantity
+              // Calcula desconto diretamente (sem hook)
+              let itemDiscount = 0
+              if (item.discountType && item.discountValue !== undefined) {
+                if (item.discountType === 'percent') {
+                  itemDiscount = itemSubtotal * (item.discountValue / 100)
+                } else {
+                  itemDiscount = item.discountValue
+                }
+              }
+              const itemTotal = Math.max(0, itemSubtotal - itemDiscount)
+
+              return (
+                <Card key={item.productId} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-semibold">{item.product.name || item.product.nome_vitrine}</span>
+                        {saleItems.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeProductFromSale(item.productId)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      {item.product.brand && (
+                        <p className="text-sm text-muted-foreground">Marca: {item.product.brand}</p>
+                      )}
+                      {item.product.size && (
+                        <p className="text-sm text-muted-foreground">Tamanho: {item.product.size}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        Estoque disponível: <span className="font-semibold">{item.product.quantity}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Quantidade *</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max={item.product.quantity}
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const value = Number(e.target.value)
+                          if (value > 0 && value <= item.product.quantity) {
+                            updateSaleItem(item.productId, 'quantity', value)
+                          }
+                        }}
+                        required
+                        className="h-10"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Preço de Venda *</Label>
+                      <CurrencyInput
+                        value={item.salePrice.toString()}
+                        onChange={(value) => updateSaleItem(item.productId, 'salePrice', Number(value.replace(/[^\d,.-]/g, '').replace(',', '.')))}
+                        placeholder="0,00"
+                        className="h-10"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Tipo de Desconto</Label>
+                      <Select
+                        value={item.discountType || ''}
+                        onValueChange={(value: string) => {
+                          updateSaleItem(item.productId, 'discountType', value || undefined)
+                          if (!value) {
+                            updateSaleItem(item.productId, 'discountValue', undefined)
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="Sem desconto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sem desconto</SelectItem>
+                          <SelectItem value="percent">Percentual (%)</SelectItem>
+                          <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {item.discountType && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">
+                        Valor do Desconto *
+                        {item.discountType === 'percent' && ' (%)'}
+                        {item.discountType === 'fixed' && ' (R$)'}
+                      </Label>
+                      {item.discountType === 'percent' ? (
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={item.discountValue || ''}
+                          onChange={(e) => updateSaleItem(item.productId, 'discountValue', Number(e.target.value))}
+                          placeholder="0"
+                          className="h-10"
+                          required
+                        />
+                      ) : (
+                        <CurrencyInput
+                          value={item.discountValue?.toString() || ''}
+                          onChange={(value) => updateSaleItem(item.productId, 'discountValue', Number(value.replace(/[^\d,.-]/g, '').replace(',', '.')))}
+                          placeholder="0,00"
+                          className="h-10"
+                          required
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal:</span>
+                      <span className="font-semibold">{formatCurrency(itemSubtotal)}</span>
+                    </div>
+                    {itemDiscount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Desconto:</span>
+                        <span>- {formatCurrency(itemDiscount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm font-bold mt-1">
+                      <span>Total do Item:</span>
+                      <span>{formatCurrency(itemTotal)}</span>
+                    </div>
+                  </div>
+                </Card>
+              )
+            })}
           </div>
 
-          {/* Resumo */}
+          {/* Resumo Geral */}
           <div className="p-4 bg-muted rounded-lg space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Subtotal ({quantityNum} unidade{quantityNum !== 1 ? 's' : ''}):</span>
-              <span className="font-semibold">{formatCurrency(subtotal)}</span>
+              <span>Subtotal ({saleItems.reduce((sum, item) => sum + item.quantity, 0)} unidade{saleItems.reduce((sum, item) => sum + item.quantity, 0) !== 1 ? 's' : ''}):</span>
+              <span className="font-semibold">{formatCurrency(totals.subtotal)}</span>
             </div>
-            {discountAmount > 0 && (
+            {totals.totalDiscount > 0 && (
               <div className="flex justify-between text-sm text-green-600">
-                <span>Desconto:</span>
-                <span className="font-semibold">- {formatCurrency(discountAmount)}</span>
+                <span>Desconto Total:</span>
+                <span className="font-semibold">- {formatCurrency(totals.totalDiscount)}</span>
               </div>
             )}
             <div className="flex justify-between text-lg font-bold border-t pt-2">
-              <span>Total:</span>
-              <span className="text-primary">{formatCurrency(total)}</span>
+              <span>Total da Venda:</span>
+              <span className="text-primary">{formatCurrency(totals.total)}</span>
             </div>
+            
+            {/* Mostra valor pendente e valor por parcela se for PIX Parcelado */}
+            {paymentMethod === 'pix_parcelado' && (
+              <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                {(() => {
+                  const downPaymentValue = downPayment ? Number(downPayment.replace(/[^\d,.-]/g, '').replace(',', '.')) : 0
+                  const pendingAmount = Math.max(0, totals.total - downPaymentValue)
+                  const installmentValue = installmentsCount > 1 ? pendingAmount / installmentsCount : 0
+                  
+                  return (
+                    <div className="space-y-2">
+                      {downPaymentValue > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span>Entrada:</span>
+                          <span className="font-semibold text-green-600">{formatCurrency(downPaymentValue)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span>Pendente de pagamento:</span>
+                        <span className="text-blue-700">{formatCurrency(pendingAmount)}</span>
+                      </div>
+                      {installmentsCount > 1 && installmentValue > 0 && (
+                        <div className="flex justify-between text-sm pt-2 border-t border-blue-300">
+                          <span>Valor por parcela ({installmentsCount}x):</span>
+                          <span className="font-bold text-blue-800">{formatCurrency(installmentValue)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
           </div>
 
           {/* Campanha */}
@@ -356,6 +565,179 @@ export function SaleModal({ open, onOpenChange, product }: SaleModalProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Cliente */}
+          <div className="space-y-2">
+            <Label htmlFor="customer" className="text-sm font-semibold flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Cliente (opcional)
+            </Label>
+            <div className="space-y-2">
+              <Input
+                id="customerSearch"
+                placeholder="Buscar cliente por nome, telefone ou Instagram..."
+                value={customerSearch}
+                onChange={(e) => {
+                  setCustomerSearch(e.target.value)
+                  if (!e.target.value) {
+                    setSelectedCustomer('')
+                  }
+                }}
+                className="h-11"
+              />
+              {customerSearch && filteredCustomers.length > 0 && !selectedCustomer && (
+                <div className="border rounded-md max-h-48 overflow-y-auto bg-background z-10">
+                  {filteredCustomers.map((customer: any) => (
+                    <div
+                      key={customer._id}
+                      onClick={() => {
+                        setSelectedCustomer(customer._id)
+                        setCustomerSearch(customer.name)
+                      }}
+                      className="p-2 cursor-pointer hover:bg-muted transition-colors"
+                    >
+                      <div className="font-medium">{customer.name}</div>
+                      {customer.phone && (
+                        <a
+                          href={getWhatsAppUrl(customer.phone)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          {formatPhone(customer.phone)}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {customerSearch && filteredCustomers.length === 0 && (
+                <div className="text-sm text-muted-foreground p-2">
+                  Nenhum cliente encontrado
+                </div>
+              )}
+              {selectedCustomer && !customerSearch && (
+                <div className="text-sm text-muted-foreground flex items-center justify-between p-2 bg-muted rounded-md">
+                  <span>Cliente: {customers.find((c: any) => c._id === selectedCustomer)?.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCustomer('')
+                      setCustomerSearch('')
+                    }}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Meio de Pagamento */}
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod" className="text-sm font-semibold flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Meio de Pagamento (opcional)
+            </Label>
+            <Select value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
+              <SelectTrigger>
+                <SelectValue 
+                  placeholder="Selecione o meio de pagamento"
+                  displayValue={
+                    paymentMethod === 'cartao_credito' ? 'Cartão de Crédito' :
+                    paymentMethod === 'cartao_debito' ? 'Cartão de Débito' :
+                    paymentMethod === 'pix' ? 'PIX' :
+                    paymentMethod === 'pix_parcelado' ? 'PIX Parcelado' :
+                    undefined
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Não especificado</SelectItem>
+                <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
+                <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
+                <SelectItem value="pix">PIX</SelectItem>
+                <SelectItem value="pix_parcelado">PIX Parcelado</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Campos de parcelamento - só aparece se for PIX Parcelado */}
+            {paymentMethod === 'pix_parcelado' && (
+              <div className="mt-4 space-y-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                <div className="space-y-2">
+                  <Label htmlFor="installmentsCount" className="text-sm font-semibold flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Quantidade de Parcelas
+                  </Label>
+                  <Select 
+                    value={installmentsCount.toString()} 
+                    onValueChange={(value) => setInstallmentsCount(Number(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a quantidade de parcelas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
+                        <SelectItem key={num} value={num.toString()}>
+                          {num}x
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="downPayment" className="text-sm font-semibold flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Valor de Entrada (opcional)
+                  </Label>
+                  <CurrencyInput
+                    id="downPayment"
+                    value={downPayment}
+                    onChange={setDownPayment}
+                    placeholder="0,00"
+                    className="h-11"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="installmentDueDate" className="text-sm font-semibold flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Data da Primeira Parcela {(() => {
+                      const downPaymentValue = downPayment ? Number(downPayment.replace(/[^\d,.-]/g, '').replace(',', '.')) : 0
+                      return downPaymentValue > 0 ? '(opcional)' : ''
+                    })()}
+                  </Label>
+                  <Input
+                    id="installmentDueDate"
+                    type="date"
+                    value={installmentDueDate}
+                    onChange={(e) => setInstallmentDueDate(e.target.value)}
+                    className="h-11"
+                    required={(() => {
+                      const downPaymentValue = downPayment ? Number(downPayment.replace(/[^\d,.-]/g, '').replace(',', '.')) : 0
+                      return paymentMethod === 'pix_parcelado' && downPaymentValue === 0
+                    })()}
+                  />
+                  {(() => {
+                    const downPaymentValue = downPayment ? Number(downPayment.replace(/[^\d,.-]/g, '').replace(',', '.')) : 0
+                    if (downPaymentValue > 0 && !installmentDueDate) {
+                      return (
+                        <p className="text-xs text-muted-foreground">
+                          Se não informar, a primeira parcela será em 1 mês a partir de hoje
+                        </p>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Observações */}
@@ -390,4 +772,3 @@ export function SaleModal({ open, onOpenChange, product }: SaleModalProps) {
     </Dialog>
   )
 }
-

@@ -37,9 +37,15 @@ async function fetchProducts(supplierId?: string) {
   if (supplierId && supplierId !== '') {
     params.append('supplierId', supplierId)
   }
-  const res = await fetch(`/api/products?${params.toString()}`)
+  const url = `/api/products?${params.toString()}`
+  console.log('=== FRONTEND FETCH PRODUCTS ===')
+  console.log('supplierId recebido:', supplierId)
+  console.log('URL:', url)
+  const res = await fetch(url)
   if (!res.ok) throw new Error('Erro ao carregar produtos')
-  return res.json()
+  const data = await res.json()
+  console.log('Produtos retornados:', data.length)
+  return data
 }
 
 async function fetchSuppliers() {
@@ -67,18 +73,28 @@ export function MovementForm({ children, productId }: MovementFormProps) {
   const [productPurchasePrice, setProductPurchasePrice] = useState<number | null>(null)
 
   // Busca produtos filtrados por fornecedor
-  const { data: products = [], isLoading, refetch } = useQuery({
+  const { data: products = [], isLoading, refetch } = useQuery<any[]>({
     queryKey: ['products', selectedSupplier],
     queryFn: () => fetchProducts(selectedSupplier),
     enabled: true, // Sempre busca, mesmo sem fornecedor selecionado
+    staleTime: 0, // Sempre considera os dados como stale para forçar refetch
   })
+  
+  // Debug: log dos produtos recebidos
+  useEffect(() => {
+    console.log('=== PRODUCTS STATE UPDATE ===')
+    console.log('products:', products)
+    console.log('products.length:', products?.length || 0)
+    console.log('isLoading:', isLoading)
+    console.log('selectedSupplier:', selectedSupplier)
+  }, [products, isLoading, selectedSupplier])
 
   const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
     queryKey: ['suppliers'],
     queryFn: fetchSuppliers,
   })
 
-  // Quando o modal abre, invalida e recarrega os produtos para garantir dados atualizados
+  // Quando o modal abre ou o fornecedor muda, invalida e recarrega os produtos
   useEffect(() => {
     if (open) {
       // Invalida todas as queries de produtos para forçar recarregamento
@@ -87,6 +103,15 @@ export function MovementForm({ children, productId }: MovementFormProps) {
       refetch()
     }
   }, [open, queryClient, refetch])
+  
+  // Recarrega produtos quando o fornecedor muda
+  useEffect(() => {
+    if (open && selectedSupplier) {
+      console.log('Fornecedor mudou, recarregando produtos:', selectedSupplier)
+      queryClient.invalidateQueries({ queryKey: ['products', selectedSupplier] })
+      refetch()
+    }
+  }, [selectedSupplier, open, queryClient, refetch])
 
   useEffect(() => {
     if (productId) {
@@ -111,13 +136,19 @@ export function MovementForm({ children, productId }: MovementFormProps) {
     }
   }, [selectedSupplier, products, selectedProduct])
 
-  // Atualiza o estoque atual e preço de compra quando o produto é selecionado
+  // Atualiza o estoque atual, preço de compra e fornecedor quando o produto é selecionado
   useEffect(() => {
     if (selectedProduct) {
       const product = products.find((p: any) => p._id === selectedProduct)
       if (product) {
         setCurrentStock(product.quantity || 0)
         setProductPurchasePrice(product.purchasePrice || null)
+        
+        // Preenche automaticamente o fornecedor do produto
+        const productSupplierId = product?.supplierId?._id || product?.supplierId
+        if (productSupplierId && !selectedSupplier) {
+          setSelectedSupplier(productSupplierId.toString())
+        }
         
         // Se for entrada e o produto tiver preço de compra, preenche automaticamente
         if (type === 'entrada' && product.purchasePrice) {
@@ -131,7 +162,7 @@ export function MovementForm({ children, productId }: MovementFormProps) {
       setCurrentStock(null)
       setProductPurchasePrice(null)
     }
-  }, [selectedProduct, products, type])
+  }, [selectedProduct, products, type, selectedSupplier])
 
   // Reseta campos específicos quando o tipo de movimentação muda
   useEffect(() => {
@@ -192,7 +223,18 @@ export function MovementForm({ children, productId }: MovementFormProps) {
       formData.append('discountType', discountType)
       formData.append('discountValue', discountValue)
     }
-    if (selectedSupplier) formData.append('supplierId', selectedSupplier)
+    
+    // Se não houver fornecedor selecionado manualmente, busca do produto
+    if (!selectedSupplier && selectedProduct) {
+      const product = products.find((p: any) => p._id === selectedProduct)
+      const productSupplierId = product?.supplierId?._id || product?.supplierId
+      if (productSupplierId) {
+        formData.append('supplierId', productSupplierId.toString())
+      }
+    } else if (selectedSupplier) {
+      formData.append('supplierId', selectedSupplier)
+    }
+    
     if (notes) formData.append('notes', notes)
 
     startTransition(async () => {
@@ -354,29 +396,47 @@ export function MovementForm({ children, productId }: MovementFormProps) {
                       />
                     </SelectTrigger>
                       <SelectContent>
-                        {products.length === 0 ? (
-                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                            {selectedSupplier
-                              ? "Nenhum produto associado a este fornecedor"
-                              : "Nenhum produto disponível"}
-                          </div>
-                        ) : (
-                        products.map((product: any) => (
-                          <SelectItem key={product._id} value={product._id}>
-                            {(() => {
-                              let display = product.name
-                              if (product.brand) {
-                                display += ` - ${product.brand}`
-                              }
-                              if (product.size) {
-                                display += ` (Tamanho: ${product.size})`
-                              }
-                              display += ` (${product.quantity} em estoque)`
-                              return display
-                            })()}
-                          </SelectItem>
-                        ))
-                      )}
+                        {(() => {
+                          console.log('=== RENDER SELECT CONTENT ===')
+                          console.log('products.length:', products.length)
+                          console.log('products:', products)
+                          console.log('isLoading:', isLoading)
+                          console.log('selectedSupplier:', selectedSupplier)
+                          
+                          if (isLoading) {
+                            return (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                Carregando produtos...
+                              </div>
+                            )
+                          }
+                          
+                          if (products.length === 0) {
+                            return (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                {selectedSupplier
+                                  ? "Nenhum produto associado a este fornecedor"
+                                  : "Nenhum produto disponível"}
+                              </div>
+                            )
+                          }
+                          
+                          return products.map((product: any) => (
+                            <SelectItem key={product._id} value={product._id}>
+                              {(() => {
+                                let display = product.name
+                                if (product.brand) {
+                                  display += ` - ${product.brand}`
+                                }
+                                if (product.size) {
+                                  display += ` (Tamanho: ${product.size})`
+                                }
+                                display += ` (${product.quantity} em estoque)`
+                                return display
+                              })()}
+                            </SelectItem>
+                          ))
+                        })()}
                     </SelectContent>
                   </Select>
                 )}

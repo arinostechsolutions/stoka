@@ -78,21 +78,69 @@ export async function createProduct(formData: FormData) {
       return value.trim()
     }
 
+    // Conecta ao DB antes de verificar a categoria do fornecedor
+    await connectDB()
+
+    // Verifica a categoria do fornecedor antes de processar os campos
+    const supplierId = formData.get('supplierId') as string
+    let supplierCategory: 'geral' | 'vestuario' | 'joia' | 'sapato' = 'geral'
+    if (supplierId) {
+      const mongoose = await import('mongoose')
+      const Supplier = (await import('@/lib/models/Supplier')).default
+      const supplier = await Supplier.findOne({ 
+        _id: new mongoose.default.Types.ObjectId(supplierId),
+        userId: session.user.id as any,
+      }).lean()
+      supplierCategory = (supplier?.category as any) || 'geral'
+    }
+    const isVestuarioSupplier = supplierCategory === 'vestuario'
+    const isJoiaSupplier = supplierCategory === 'joia'
+    const isSapatoSupplier = supplierCategory === 'sapato'
+
     const data: any = {
       name: formData.get('name') as string,
       nome_vitrine: emptyToUndefined(formData.get('nome_vitrine') as string),
       sku: formData.get('sku') as string || undefined,
       category: formData.get('category') as string || undefined,
-      supplierId: formData.get('supplierId') as string || undefined,
+      supplierId: supplierId || undefined,
       quantity: Number(formData.get('quantity')),
       minQuantity: Number(formData.get('minQuantity')),
-      size: formData.get('size') as string || undefined,
-      color: formData.get('color') as string || undefined,
-      brand: formData.get('brand') as string || undefined,
-      material: formData.get('material') as string || undefined,
-      genero: genero && genero.trim() !== '' ? genero.trim() as 'masculino' | 'feminino' | 'unissex' : undefined,
       imageUrl: formData.get('imageUrl') as string || undefined,
       pre_venda: pre_venda,
+    }
+
+    // Campos de vestuário: só inclui se fornecedor for de vestuário
+    if (isVestuarioSupplier) {
+      data.size = emptyToUndefined(formData.get('size') as string)
+      data.color = emptyToUndefined(formData.get('color') as string)
+      data.brand = emptyToUndefined(formData.get('brand') as string)
+      data.material = emptyToUndefined(formData.get('material') as string)
+      data.genero = genero && genero.trim() !== '' ? genero.trim() as 'masculino' | 'feminino' | 'unissex' : undefined
+    }
+
+    // Campos de jóias: só inclui se fornecedor for de jóias
+    if (isJoiaSupplier) {
+      data.tipo_joia = emptyToUndefined(formData.get('tipo_joia') as string)
+      data.pedra = emptyToUndefined(formData.get('pedra') as string)
+      const quilateStr = formData.get('quilate') as string | null
+      data.quilate = quilateStr && quilateStr.trim() !== '' ? Number(quilateStr) : undefined
+      // Material também é usado para jóias
+      data.material = emptyToUndefined(formData.get('material') as string)
+    }
+
+    // Campos de sapatos: só inclui se fornecedor for de sapatos
+    if (isSapatoSupplier) {
+      // Lê 'numeracao' (sem acentuação) do formData e mapeia para 'numeração' no banco
+      const numeracaoValue = formData.get('numeracao') as string | null
+      const tipoSapatoValue = formData.get('tipo_sapato') as string | null
+      
+      data.numeração = emptyToUndefined(numeracaoValue)
+      data.tipo_sapato = emptyToUndefined(tipoSapatoValue)
+      
+      // Cor, marca e material também são usados para sapatos
+      data.color = emptyToUndefined(formData.get('color') as string)
+      data.brand = emptyToUndefined(formData.get('brand') as string)
+      data.material = emptyToUndefined(formData.get('material') as string)
     }
 
     // Processa purchasePrice
@@ -113,20 +161,43 @@ export async function createProduct(formData: FormData) {
 
     const validatedData = productSchema.parse(data)
 
-    await connectDB()
-
     // Verifica se deve criar movimentação inicial
     const shouldCreateInitialMovement = formData.get('createInitialMovement') === 'true'
     const initialQuantity = validatedData.quantity
 
     // Cria produto com quantity = 0 se for criar movimentação inicial
-    const productData = {
+    const productData: any = {
       ...validatedData,
       quantity: shouldCreateInitialMovement ? 0 : validatedData.quantity,
-      userId: session.user.id as any,
+      userId: new (await import('mongoose')).default.Types.ObjectId(session.user.id as string),
+    }
+    
+    // Garante que numeração seja incluído explicitamente se existir
+    if (validatedData.numeração !== undefined) {
+      productData.numeração = validatedData.numeração
+    }
+    
+    // Garante que campos de jóias sejam incluídos explicitamente se existirem
+    if (validatedData.tipo_joia !== undefined) {
+      productData.tipo_joia = validatedData.tipo_joia
+    }
+    if (validatedData.pedra !== undefined) {
+      productData.pedra = validatedData.pedra
+    }
+    if (validatedData.quilate !== undefined) {
+      productData.quilate = validatedData.quilate
     }
 
-    const createdProduct = await Product.create(productData)
+    // Usa insertOne diretamente na collection para garantir que todos os campos sejam salvos
+    // Isso contorna possíveis problemas de validação do schema em cache
+    const result = await Product.collection.insertOne(productData)
+    
+    // Busca o produto criado
+    const createdProduct = await Product.findOne({ _id: result.insertedId })
+    
+    if (!createdProduct) {
+      return { error: 'Erro ao criar produto' }
+    }
     
     // Cria movimentação inicial se solicitado, houver quantidade e preço de compra
     if (shouldCreateInitialMovement && initialQuantity > 0) {
@@ -252,9 +323,9 @@ export async function updateProduct(id: string, formData: FormData) {
     const updateData: any = {}
     const unsetData: any = {}
 
-    // Verifica se o fornecedor é de vestuário
+    // Verifica a categoria do fornecedor
     const supplierId = formData.get('supplierId') as string
-    let isVestuarioSupplier = false
+    let supplierCategory: 'geral' | 'vestuario' | 'joia' | 'sapato' = 'geral'
     if (supplierId) {
       const mongoose = await import('mongoose')
       const Supplier = (await import('@/lib/models/Supplier')).default
@@ -262,8 +333,11 @@ export async function updateProduct(id: string, formData: FormData) {
         _id: new mongoose.default.Types.ObjectId(supplierId),
         userId: session.user.id as any,
       }).lean()
-      isVestuarioSupplier = supplier?.category === 'vestuario'
+      supplierCategory = (supplier?.category as any) || 'geral'
     }
+    const isVestuarioSupplier = supplierCategory === 'vestuario'
+    const isJoiaSupplier = supplierCategory === 'joia'
+    const isSapatoSupplier = supplierCategory === 'sapato'
 
     // Helper para processar campos opcionais (converte string vazia em undefined)
     const processOptionalField = (value: string | null | undefined): string | undefined => {
@@ -358,6 +432,88 @@ export async function updateProduct(id: string, formData: FormData) {
       unsetData.genero = ''
     }
 
+    // Processa campos de jóias
+    if (isJoiaSupplier) {
+      const tipo_joia = processOptionalField(formData.get('tipo_joia') as string | null)
+      const pedra = processOptionalField(formData.get('pedra') as string | null)
+      const quilateStr = formData.get('quilate') as string | null
+      const quilate = quilateStr && quilateStr.trim() !== '' ? Number(quilateStr) : undefined
+
+      if (tipo_joia === undefined) {
+        unsetData.tipo_joia = ''
+      } else {
+        updateData.tipo_joia = tipo_joia
+      }
+
+      if (pedra === undefined) {
+        unsetData.pedra = ''
+      } else {
+        updateData.pedra = pedra
+      }
+
+      if (quilate === undefined || isNaN(quilate)) {
+        unsetData.quilate = ''
+      } else {
+        updateData.quilate = quilate
+      }
+
+      // Material também é usado para jóias
+      const materialValue = processOptionalField(material)
+      if (materialValue === undefined) {
+        unsetData.material = ''
+      } else {
+        updateData.material = materialValue
+      }
+    } else {
+      unsetData.tipo_joia = ''
+      unsetData.pedra = ''
+      unsetData.quilate = ''
+    }
+
+    // Processa campos de sapatos
+    if (isSapatoSupplier) {
+      // Lê 'numeracao' (sem acentuação) do formData e mapeia para 'numeração' no banco
+      const numeração = processOptionalField(formData.get('numeracao') as string | null)
+      const tipo_sapato = processOptionalField(formData.get('tipo_sapato') as string | null)
+
+      if (numeração === undefined) {
+        unsetData.numeração = ''
+      } else {
+        updateData.numeração = numeração
+      }
+
+      if (tipo_sapato === undefined) {
+        unsetData.tipo_sapato = ''
+      } else {
+        updateData.tipo_sapato = tipo_sapato
+      }
+
+      // Cor, marca e material também são usados para sapatos
+      const colorValue = processOptionalField(color)
+      if (colorValue === undefined) {
+        unsetData.color = ''
+      } else {
+        updateData.color = colorValue
+      }
+
+      const brandValue = processOptionalField(brand)
+      if (brandValue === undefined) {
+        unsetData.brand = ''
+      } else {
+        updateData.brand = brandValue
+      }
+
+      const materialValue = processOptionalField(material)
+      if (materialValue === undefined) {
+        unsetData.material = ''
+      } else {
+        updateData.material = materialValue
+      }
+    } else {
+      unsetData.numeração = ''
+      unsetData.tipo_sapato = ''
+    }
+
     // Processa imageUrl
     const imageUrlValue = formData.get('imageUrl') as string | null
 
@@ -381,7 +537,7 @@ export async function updateProduct(id: string, formData: FormData) {
     // Processa outros campos (não opcionais ou já processados)
     Object.keys(validatedData).forEach(key => {
       // Pula campos já processados
-      if (['size', 'color', 'brand', 'material', 'imageUrl', 'pre_venda', 'genero', 'sku', 'category', 'supplierId', 'nome_vitrine'].includes(key)) {
+      if (['size', 'color', 'brand', 'material', 'imageUrl', 'pre_venda', 'genero', 'sku', 'category', 'supplierId', 'nome_vitrine', 'tipo_joia', 'pedra', 'quilate', 'numeração', 'tipo_sapato'].includes(key)) {
         return
       }
       const value = validatedData[key as keyof typeof validatedData]

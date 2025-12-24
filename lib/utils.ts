@@ -15,11 +15,21 @@ export function formatPhone(phone: string): string {
       if (p1) return `(${p1}`
       return numbers
     })
-  } else {
+  } else if (numbers.length <= 11) {
     return numbers.replace(/(\d{2})(\d{5})(\d{0,4})/, (match, p1, p2, p3) => {
       if (p3) return `(${p1}) ${p2}-${p3}`
       if (p2) return `(${p1}) ${p2}`
       if (p1) return `(${p1}`
+      return numbers
+    })
+  } else {
+    // Para números com código do país (ex: 5511999999999)
+    // Formato: +55 (11) 99999-9999
+    return numbers.replace(/(\d{2})(\d{2})(\d{5})(\d{0,4})/, (match, p1, p2, p3, p4) => {
+      if (p4) return `+${p1} (${p2}) ${p3}-${p4}`
+      if (p3) return `+${p1} (${p2}) ${p3}`
+      if (p2) return `+${p1} (${p2}`
+      if (p1) return `+${p1}`
       return numbers
     })
   }
@@ -62,5 +72,17 @@ export function formatDiscountType(discountType?: string): string {
     default:
       return discountType
   }
+}
+
+export function getInstagramUrl(instagram: string): string {
+  if (!instagram) return ''
+  const username = instagram.replace(/^@/, '').trim()
+  return `https://instagram.com/${username}`
+}
+
+export function getWhatsAppUrl(phone: string): string {
+  if (!phone) return ''
+  const numbers = phone.replace(/\D/g, '')
+  return `https://wa.me/55${numbers}`
 }
 

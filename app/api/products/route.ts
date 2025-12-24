@@ -24,29 +24,111 @@ export async function GET(request: Request) {
     // Filtra por fornecedor se fornecido
     if (supplierId && supplierId !== 'all' && supplierId !== '') {
       try {
-        const mongoose = await import('mongoose')
-        filter.supplierId = new mongoose.default.Types.ObjectId(supplierId)
-      } catch {
-        filter.supplierId = supplierId
+        // Converte para ObjectId
+        const supplierObjectId = new mongoose.Types.ObjectId(supplierId)
+        // Usa $and para combinar userId com $or do supplierId (busca tanto como ObjectId quanto como string)
+        // Também tenta buscar quando supplierId está populado (objeto com _id)
+        filter.$and = [
+          { userId: session.user.id as any },
+          {
+            $or: [
+              { supplierId: supplierObjectId },
+              { supplierId: supplierId },
+              { 'supplierId._id': supplierObjectId },
+              { 'supplierId._id': supplierId }
+            ]
+          }
+        ]
+        // Remove userId do nível principal já que está dentro do $and
+        delete filter.userId
+      } catch (error) {
+        console.error('Erro ao converter supplierId para ObjectId:', error)
+        // Se falhar a conversão, tenta como string
+        filter.$and = [
+          { userId: session.user.id as any },
+          {
+            $or: [
+              { supplierId: supplierId },
+              { 'supplierId._id': supplierId }
+            ]
+          }
+        ]
+        delete filter.userId
       }
     }
 
     // Garante que o modelo Supplier está registrado antes do populate
-    // O import acima já registra o modelo, mas verificamos para garantir
     if (!mongoose.models.Supplier) {
       // Força o registro do modelo
       Supplier
     }
 
-    const products = await Product.find(filter)
+    // Busca produtos sem populate primeiro para verificar o formato do supplierId
+    let products = await Product.find(filter)
       .select('_id name nome_vitrine imageUrl salePrice quantity supplierId brand size purchasePrice pre_venda')
+      .sort({ name: 1 })
       .populate({
         path: 'supplierId',
-        select: 'name',
+        model: Supplier,
+        select: 'name category',
         strictPopulate: false,
       })
-      .sort({ name: 1 })
-      .lean()
+
+    // Se não encontrou produtos e supplierId foi fornecido, tenta buscar de outra forma
+    if (products.length === 0 && supplierId && supplierId !== 'all' && supplierId !== '') {
+      console.log('⚠️ Tentando busca alternativa para supplierId:', supplierId)
+      // Tenta buscar todos os produtos do usuário e filtrar manualmente
+      const allProducts = await Product.find({ userId: session.user.id as any })
+        .select('_id name nome_vitrine imageUrl salePrice quantity supplierId brand size purchasePrice pre_venda')
+        .populate({
+          path: 'supplierId',
+          model: Supplier,
+          select: 'name category',
+          strictPopulate: false,
+        })
+      
+      // Filtra manualmente comparando supplierId como string
+      products = allProducts.filter((p: any) => {
+        const pSupplierId = p.supplierId?._id?.toString ? p.supplierId._id.toString() : 
+                           (p.supplierId?.toString ? p.supplierId.toString() : 
+                           (typeof p.supplierId === 'string' ? p.supplierId : null))
+        return pSupplierId === supplierId
+      })
+      console.log('Produtos encontrados com filtro manual:', products.length)
+    }
+
+    // Debug: verifica se os produtos estão sendo filtrados corretamente
+    console.log('=== API PRODUCTS DEBUG ===')
+    console.log('supplierId recebido:', supplierId)
+    console.log('filter completo:', JSON.stringify(filter, null, 2))
+    
+    // Se não encontrou produtos, busca todos para verificar se existem produtos com esse supplierId
+    if (products.length === 0 && supplierId) {
+      console.log('⚠️ Nenhum produto encontrado com o filtro. Buscando todos os produtos para debug...')
+      const allProducts = await Product.find({ userId: session.user.id as any })
+        .select('_id name supplierId')
+        .populate({
+          path: 'supplierId',
+          model: Supplier,
+          select: 'name',
+          strictPopulate: false,
+        })
+      console.log('Total de produtos do usuário:', allProducts.length)
+      const productsWithSupplier = allProducts.filter((p: any) => {
+        const pSupplierId = p.supplierId?.toString ? p.supplierId.toString() : (p.supplierId?._id?.toString ? p.supplierId._id.toString() : p.supplierId)
+        return pSupplierId === supplierId
+      })
+      console.log('Produtos com supplierId correspondente:', productsWithSupplier.length)
+      if (productsWithSupplier.length > 0) {
+        console.log('Primeiro produto encontrado:', {
+          _id: productsWithSupplier[0]._id,
+          name: productsWithSupplier[0].name,
+          supplierId: productsWithSupplier[0].supplierId
+        })
+      }
+    }
+    
+    console.log('Produtos encontrados com filtro:', products.length)
 
     return NextResponse.json(products)
   } catch (error) {

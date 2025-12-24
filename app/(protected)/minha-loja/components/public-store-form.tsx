@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AlertCircle, Globe, MessageSquare, Phone, Package, Loader2, Image as ImageIcon, X, Palette } from 'lucide-react'
+import { maskPhone, unmaskPhone } from '@/lib/utils/masks'
 import { createPublicStore, updatePublicStore } from '../actions'
 import { ProductSelector } from './product-selector'
 import { useQuery } from '@tanstack/react-query'
@@ -45,7 +46,7 @@ export function PublicStoreForm({ store }: PublicStoreFormProps) {
   const [title, setTitle] = useState(store?.title || '')
   const [description, setDescription] = useState(store?.description || '')
   const [whatsappMessage, setWhatsappMessage] = useState(store?.whatsappMessage || 'Olá! Tenho interesse nos seguintes produtos:')
-  const [phone, setPhone] = useState(store?.phone || '')
+  const [phone, setPhone] = useState(store?.phone ? maskPhone(store.phone) : '')
   const [selectedProducts, setSelectedProducts] = useState<string[]>(store?.selectedProducts || [])
   const [isActive, setIsActive] = useState(store?.isActive ?? true)
   const [backgroundColor, setBackgroundColor] = useState(store?.backgroundColor || '#FFFFFF')
@@ -67,7 +68,7 @@ export function PublicStoreForm({ store }: PublicStoreFormProps) {
       setTitle(store.title || '')
       setDescription(store.description || '')
       setWhatsappMessage(store.whatsappMessage || 'Olá! Tenho interesse nos seguintes produtos:')
-      setPhone(store.phone || '')
+      setPhone(store.phone ? maskPhone(store.phone) : '')
       setSelectedProducts(store.selectedProducts || [])
       setIsActive(store.isActive ?? true)
       setBackgroundColor(store.backgroundColor || '#FFFFFF')
@@ -220,7 +221,7 @@ export function PublicStoreForm({ store }: PublicStoreFormProps) {
     formData.set('title', title.trim())
     formData.set('description', description.trim())
     formData.set('whatsappMessage', whatsappMessage.trim())
-    formData.set('phone', phone.replace(/\D/g, ''))
+    formData.set('phone', unmaskPhone(phone))
     formData.set('selectedProducts', JSON.stringify(selectedProducts))
     formData.set('isActive', isActive ? 'true' : 'false')
     formData.set('backgroundColor', backgroundColor || '#FFFFFF')
@@ -472,15 +473,13 @@ export function PublicStoreForm({ store }: PublicStoreFormProps) {
             <Input
               id="phone"
               value={phone}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '')
-                setPhone(value)
-              }}
-              placeholder="5511999999999 (apenas números com DDD e código do país)"
+              onChange={(e) => setPhone(maskPhone(e.target.value))}
+              placeholder="+55 (11) 99999-9999"
               required
+              maxLength={18}
             />
             <p className="text-xs text-muted-foreground">
-              Formato: código do país + DDD + número (ex: 5511999999999)
+              Formato: +55 (11) 99999-9999 (código do país + DDD + número)
             </p>
           </div>
 

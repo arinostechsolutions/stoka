@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from 'mongoose'
 
-export type SupplierCategory = 'geral' | 'vestuario'
+export type SupplierCategory = 'geral' | 'vestuario' | 'joia' | 'sapato'
 
 export interface ISupplier extends Document {
   userId: Types.ObjectId
@@ -30,7 +30,10 @@ const SupplierSchema = new Schema<ISupplier>(
     },
     category: {
       type: String,
-      enum: ['geral', 'vestuario'],
+      enum: {
+        values: ['geral', 'vestuario', 'joia', 'sapato'],
+        message: 'Categoria inválida. Use: geral, vestuario, joia ou sapato',
+      },
       default: 'geral',
     },
     cnpj: {
@@ -63,7 +66,17 @@ const SupplierSchema = new Schema<ISupplier>(
 
 SupplierSchema.index({ userId: 1, name: 1 })
 
-const Supplier: Model<ISupplier> = mongoose.models.Supplier || mongoose.model<ISupplier>('Supplier', SupplierSchema)
+// Força a recriação do modelo para atualizar o enum
+// Remove do cache se existir para garantir que o novo enum seja usado
+if (mongoose.models.Supplier) {
+  const connection = mongoose.connection
+  if (connection.models.Supplier) {
+    delete (connection.models as any).Supplier
+  }
+  delete mongoose.models.Supplier
+}
+
+const Supplier: Model<ISupplier> = mongoose.model<ISupplier>('Supplier', SupplierSchema)
 
 export default Supplier
 

@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { FileText, ExternalLink, User, Building2, MapPin, Phone, Mail, Copy, Check, Package } from 'lucide-react'
+import { maskPhone } from '@/lib/utils/masks'
 import { formatCurrency } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -196,8 +197,9 @@ Total: ${formatCurrency(total)}
                       <Label>Telefone</Label>
                       <Input
                         value={clientPhone}
-                        onChange={(e) => setClientPhone(e.target.value)}
+                        onChange={(e) => setClientPhone(maskPhone(e.target.value))}
                         placeholder="(00) 00000-0000"
+                        maxLength={15}
                       />
                     </div>
                   </div>

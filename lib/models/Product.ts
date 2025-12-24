@@ -19,6 +19,13 @@ export interface IProduct extends Document {
   imageUrl?: string // URL da imagem do produto no Cloudinary
   pre_venda?: boolean // Se o produto está em pré-venda (true) ou pronta entrega (false)
   genero?: 'masculino' | 'feminino' | 'unissex' // Gênero do produto
+  // Campos específicos para jóias
+  tipo_joia?: string // Tipo de jóia (anel, brinco, colar, pulseira, etc)
+  pedra?: string // Tipo de pedra (diamante, rubi, esmeralda, etc)
+  quilate?: number // Quilate (para ouro)
+  // Campos específicos para sapatos
+  numeração?: string // Numeração do sapato (35, 36, 37, etc)
+  tipo_sapato?: string // Tipo de sapato (tênis, sandália, bota, etc)
   createdAt: Date
   updatedAt: Date
 }
@@ -102,6 +109,28 @@ const ProductSchema = new Schema<IProduct>(
     genero: {
       type: String,
       enum: ['masculino', 'feminino', 'unissex'],
+      trim: true,
+    },
+    // Campos específicos para jóias
+    tipo_joia: {
+      type: String,
+      trim: true,
+    },
+    pedra: {
+      type: String,
+      trim: true,
+    },
+    quilate: {
+      type: Number,
+      min: [0, 'Quilate não pode ser negativo'],
+    },
+    // Campos específicos para sapatos
+    numeração: {
+      type: String,
+      trim: true,
+    },
+    tipo_sapato: {
+      type: String,
       trim: true,
     },
   },

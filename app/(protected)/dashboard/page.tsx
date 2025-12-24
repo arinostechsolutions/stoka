@@ -8,6 +8,8 @@ import { Package, AlertTriangle, TrendingUp, Clock } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { TopCustomers } from './components/top-customers'
+import { Birthdays } from './components/birthdays'
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -15,7 +17,7 @@ export default async function DashboardPage() {
 
   await connectDB()
 
-  const [totalProducts, lowStockProducts, recentMovements] = await Promise.all([
+  const [totalProducts, lowStockProducts, recentMovements, totalMovements] = await Promise.all([
     Product.countDocuments({ userId: userId as any }),
     Product.find({
       userId: userId as any,
@@ -26,6 +28,7 @@ export default async function DashboardPage() {
       .sort({ createdAt: -1 })
       .limit(5)
       .lean(),
+    Movement.countDocuments({ userId: userId as any }),
   ])
 
   const totalLowStock = await Product.countDocuments({
@@ -67,8 +70,8 @@ export default async function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{recentMovements.length}</div>
-            <p className="text-xs text-muted-foreground">Últimas 5</p>
+            <div className="text-2xl font-bold">{totalMovements}</div>
+            <p className="text-xs text-muted-foreground">Total de movimentações</p>
           </CardContent>
         </Card>
 
@@ -126,48 +129,54 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Últimas Movimentações</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentMovements.length > 0 ? (
-            <div className="space-y-2">
-              {recentMovements.map((movement: any) => (
-                <div
-                  key={movement._id.toString()}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div>
-                    <p className="font-medium">
-                      {movement.productId?.name || 'Produto removido'}
-                    </p>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Últimas Movimentações</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentMovements.length > 0 ? (
+              <div className="space-y-2">
+                {recentMovements.map((movement: any) => (
+                  <div
+                    key={movement._id.toString()}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div>
+                      <p className="font-medium">
+                        {movement.productId?.name || 'Produto removido'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {movement.type === 'entrada' && '➕ Entrada'}
+                        {movement.type === 'saida' && '➖ Saída'}
+                        {movement.type === 'ajuste' && '🔧 Ajuste'}
+                        {' • '}
+                        {movement.quantity} unidades
+                      </p>
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      {movement.type === 'entrada' && '➕ Entrada'}
-                      {movement.type === 'saida' && '➖ Saída'}
-                      {movement.type === 'ajuste' && '🔧 Ajuste'}
-                      {' • '}
-                      {movement.quantity} unidades
+                      {formatDate(movement.createdAt)}
                     </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(movement.createdAt)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              <p>Nenhuma movimentação ainda</p>
-              <Link href="/movimentacoes">
-                <Button variant="outline" className="mt-4">
-                  Criar primeira movimentação
-                </Button>
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-muted-foreground">
+                <p>Nenhuma movimentação ainda</p>
+                <Link href="/movimentacoes">
+                  <Button variant="outline" className="mt-4">
+                    Criar primeira movimentação
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <TopCustomers />
+      </div>
+
+      <Birthdays />
     </div>
   )
 }

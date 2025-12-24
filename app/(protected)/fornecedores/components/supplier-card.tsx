@@ -12,7 +12,7 @@ interface SupplierCardProps {
   supplier: {
     _id: string
     name: string
-    category?: 'geral' | 'vestuario'
+    category?: 'geral' | 'vestuario' | 'joia' | 'sapato'
     cnpj?: string
     email?: string
     phone?: string

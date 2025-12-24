@@ -2,15 +2,19 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import connectDB from '@/lib/db'
 import Customer from '@/lib/models/Customer'
+import Movement from '@/lib/models/Movement'
+import Product from '@/lib/models/Product'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, ArrowLeft, Phone, MapPin, Instagram, Baby } from 'lucide-react'
+import { Users, ArrowLeft, Phone, MapPin, Instagram, Baby, ShoppingBag, MessageCircle, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { CustomerForm } from '../components/customer-form'
 import { DeleteCustomerButton } from './delete-button'
-import { formatPhone } from '@/lib/utils'
+import { formatPhone, getInstagramUrl, getWhatsAppUrl } from '@/lib/utils'
 import { redirect } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
+import { PurchaseHistory } from './components/purchase-history'
+import { InstallmentsManager } from './components/installments-manager'
 
 export default async function CustomerDetailPage({
   params,
@@ -31,8 +35,47 @@ export default async function CustomerDetailPage({
     redirect('/clientes')
   }
 
+  // Garante que o modelo Product está registrado antes do populate
+  const ProductModel = Product
+
+  // Busca movimentações de saída e entrada (pagamentos de parcelas) associadas ao cliente
+  const movementsRaw = await Movement.find({
+    customerId: params.id,
+    userId: userId as any,
+    $or: [
+      { type: 'saida' },
+      { type: 'entrada', notes: { $regex: /Pagamento de parcela/i } } // Entradas que são pagamentos de parcelas
+    ],
+  })
+    .populate({
+      path: 'productId',
+      model: ProductModel,
+      select: 'name nome_vitrine brand size',
+    })
+    .populate('campaignId', 'name')
+    .select('_id productId quantity salePrice totalRevenue paymentMethod campaignId notes saleGroupId type installmentsCount createdAt')
+    .sort({ createdAt: -1 })
+    .lean()
+
+  // Converte saleGroupId ObjectId para string antes de serializar
+  const movements = movementsRaw.map((doc: any) => ({
+    ...doc,
+    saleGroupId: doc.saleGroupId ? doc.saleGroupId.toString() : undefined,
+  }))
+
+  // Debug: log das movimentações no servidor
+  console.log('=== SERVER: Movimentações encontradas ===')
+  console.log('Total de movimentações:', movements.length)
+  console.log('Movimentações com saleGroupId:', movements.filter((m: any) => m.saleGroupId).map((m: any) => ({
+    _id: m._id,
+    saleGroupId: m.saleGroupId,
+    productName: m.productId?.name,
+  })))
+  console.log('Movimentações sem saleGroupId:', movements.filter((m: any) => !m.saleGroupId).length)
+
   // Serializa para JSON simples para evitar warnings do Next.js
   const serializedCustomer = JSON.parse(JSON.stringify(customer))
+  const serializedMovements = JSON.parse(JSON.stringify(movements))
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -67,23 +110,43 @@ export default async function CustomerDetailPage({
           </CardHeader>
           <CardContent className="space-y-3">
             {customer.phone && (
-              <div className="flex items-center gap-2 text-sm md:text-base">
-                <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+              <a
+                href={getWhatsAppUrl(customer.phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm md:text-base hover:text-primary transition-colors"
+              >
+                <MessageCircle className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span>{formatPhone(customer.phone)}</span>
-              </div>
+              </a>
             )}
 
             {customer.instagram && (
-              <div className="flex items-center gap-2 text-sm md:text-base">
+              <a
+                href={getInstagramUrl(customer.instagram)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm md:text-base hover:text-primary transition-colors"
+              >
                 <Instagram className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>{customer.instagram}</span>
-              </div>
+                <span>@{customer.instagram}</span>
+              </a>
             )}
 
             {customer.address && (
               <div className="flex items-start gap-2 text-sm md:text-base">
                 <MapPin className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
                 <span className="break-words">{customer.address}</span>
+              </div>
+            )}
+
+            {customer.notes && (
+              <div className="flex items-start gap-2 text-sm md:text-base pt-2 border-t">
+                <FileText className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
+                <div>
+                  <div className="font-semibold mb-1">Observações:</div>
+                  <span className="whitespace-pre-wrap break-words">{customer.notes}</span>
+                </div>
               </div>
             )}
           </CardContent>
@@ -103,7 +166,11 @@ export default async function CustomerDetailPage({
                   <div className="font-medium">{child.name}</div>
                   <div className="flex flex-wrap gap-2 text-sm">
                     {child.age && <span>Idade: {child.age} anos</span>}
-                    {child.size && <span>Tamanho: {child.size}</span>}
+                    {child.size && (
+                      <span>
+                        Tamanho: {Array.isArray(child.size) ? child.size.join(', ') : child.size}
+                      </span>
+                    )}
                     {child.gender && (
                       <Badge variant="secondary">
                         {child.gender === 'masculino' ? 'Masculino' : 'Feminino'}
@@ -116,6 +183,32 @@ export default async function CustomerDetailPage({
           </Card>
         )}
       </div>
+
+      {/* Gerenciar Parcelas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingBag className="h-5 w-5" />
+            Parcelas de Pagamento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InstallmentsManager customerId={params.id} initialMovements={serializedMovements} />
+        </CardContent>
+      </Card>
+
+      {/* Histórico de Compras */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingBag className="h-5 w-5" />
+            Histórico de Compras
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PurchaseHistory customerId={params.id} initialMovements={serializedMovements} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

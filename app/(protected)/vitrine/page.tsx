@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import connectDB from '@/lib/db'
 import Product from '@/lib/models/Product'
+import Supplier from '@/lib/models/Supplier'
 import Customer from '@/lib/models/Customer'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,9 +15,16 @@ async function VitrineProducts() {
 
   await connectDB()
 
+  // Garante que o modelo Supplier está registrado
+  Supplier
+
   const [products, customers] = await Promise.all([
     Product.find({ userId: userId as any })
-      .populate('supplierId', 'name')
+      .populate({
+        path: 'supplierId',
+        select: 'name',
+        strictPopulate: false,
+      })
       .sort({ name: 1 })
       .lean(),
     Customer.find({ userId: userId as any })

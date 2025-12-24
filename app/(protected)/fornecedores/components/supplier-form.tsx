@@ -24,7 +24,7 @@ interface SupplierFormProps {
   supplier?: {
     _id: string
     name: string
-    category?: 'geral' | 'vestuario'
+    category?: 'geral' | 'vestuario' | 'joia' | 'sapato'
     cnpj?: string
     email?: string
     phone?: string
@@ -41,7 +41,7 @@ export function SupplierForm({ children, supplier }: SupplierFormProps) {
   const [phoneValue, setPhoneValue] = useState(supplier?.phone ? maskPhone(supplier.phone) : '')
   const [cnpjValue, setCnpjValue] = useState(supplier?.cnpj ? maskCNPJ(supplier.cnpj) : '')
   const [cnpjError, setCnpjError] = useState('')
-  const [category, setCategory] = useState<'geral' | 'vestuario'>(supplier?.category || 'geral')
+  const [category, setCategory] = useState<'geral' | 'vestuario' | 'joia' | 'sapato'>(supplier?.category || 'geral')
 
   // Atualiza os estados quando a modal abre ou quando o supplier muda
   useEffect(() => {
@@ -93,6 +93,8 @@ export function SupplierForm({ children, supplier }: SupplierFormProps) {
     }
 
     const formData = new FormData(e.currentTarget)
+    // Garante que a categoria está sendo enviada
+    formData.set('category', category)
     // Salvar valores sem máscara
     if (phoneValue) {
       formData.set('phone', unmaskPhone(phoneValue))
@@ -163,17 +165,22 @@ export function SupplierForm({ children, supplier }: SupplierFormProps) {
                   <Tag className="h-4 w-4" />
                   Categoria
                 </Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as 'geral' | 'vestuario')}>
+                <Select value={category} onValueChange={(v) => setCategory(v as 'geral' | 'vestuario' | 'joia' | 'sapato')}>
                   <SelectTrigger className="h-11">
                     <SelectValue
                       displayValue={
-                        category === 'vestuario' ? 'Vestuário' : 'Geral'
+                        category === 'vestuario' ? 'Vestuário' :
+                        category === 'joia' ? 'Jóia' :
+                        category === 'sapato' ? 'Sapato' :
+                        'Geral'
                       }
                     />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="geral">Geral</SelectItem>
                     <SelectItem value="vestuario">Vestuário</SelectItem>
+                    <SelectItem value="joia">Jóia</SelectItem>
+                    <SelectItem value="sapato">Sapato</SelectItem>
                   </SelectContent>
                 </Select>
                 <input type="hidden" name="category" value={category} />

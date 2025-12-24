@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DollarSign, TrendingUp, Package, Calendar, Building2, Filter } from 'lucide-react'
+import { DollarSign, TrendingUp, Package, Calendar, Building2, Filter, TrendingDown, Percent, CreditCard } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import {
   LineChart,
@@ -26,6 +26,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Cell,
 } from 'recharts'
 
 async function fetchReports(
@@ -145,10 +146,23 @@ export function ReportsContent() {
 
   const {
     totalSpent = 0,
+    totalAllTimeSpent = 0,
     totalRevenue = 0,
+    totalSalesCost = 0,
+    profitMargin = 0,
+    profitMarginPercent = 0,
     totalStockValue = 0,
+    totalStockSaleValue = 0,
+    currentStockPotentialProfit = 0,
+    currentStockPotentialMarginPercent = 0,
+    totalPotentialSaleValue = 0,
+    totalPurchaseCost = 0,
+    potentialProfit = 0,
+    potentialMarginPercent = 0,
     dailyMovements = [],
     topProducts = [],
+    diagnostics = null,
+    salesByPaymentMethod = {},
   } = data || {}
 
   // Formata a data para exibição (DD/MM)
@@ -157,6 +171,15 @@ export function ReportsContent() {
     const [year, month, day] = dateStr.split('-')
     if (!day || !month) return dateStr
     return `${day}/${month}`
+  }
+
+  // Labels para meios de pagamento
+  const paymentMethodLabels: Record<string, string> = {
+    cartao_credito: 'Cartão de Crédito',
+    cartao_debito: 'Cartão de Débito',
+    pix: 'PIX',
+    pix_parcelado: 'PIX Parcelado',
+    sem_metodo: 'Sem Método',
   }
 
   const formattedDailyMovements = (dailyMovements || []).map((item: any) => ({
@@ -287,7 +310,7 @@ export function ReportsContent() {
       </Card>
 
       {/* Cards de resumo */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Gasto</CardTitle>
@@ -328,11 +351,222 @@ export function ReportsContent() {
               {formatCurrency(totalStockValue)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Valor total em estoque
+              Valor atual em estoque
+              {diagnostics?.stockValueMethod === 'historical' && (
+                <span className="ml-1 text-green-600">(calculado por histórico)</span>
+              )}
             </p>
+            {totalAllTimeSpent > 0 && (
+              <div className="mt-2 pt-2 border-t">
+                <p className="text-xs text-muted-foreground">
+                  Total investido (todas as compras): {formatCurrency(totalAllTimeSpent)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Diferença: {formatCurrency(totalAllTimeSpent - totalStockValue)}
+                  {totalStockValue > 0 && (
+                    <span className="ml-1">
+                      ({totalAllTimeSpent > totalStockValue ? 'produtos vendidos' : 'estoque maior que compras'})
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+            {diagnostics && (
+              <>
+                {diagnostics.productsWithoutPrice > 0 && (
+                  <div className="mt-2 pt-2 border-t">
+                    <p className="text-xs text-yellow-600">
+                      ⚠️ {diagnostics.productsWithoutPrice} produto(s) sem preço de compra
+                      {diagnostics.productsWithoutPriceQuantity > 0 && (
+                        <span> ({diagnostics.productsWithoutPriceQuantity} unidades)</span>
+                      )}
+                    </p>
+                  </div>
+                )}
+                {diagnostics.stockValueDiscrepancy > 0 && (
+                  <div className="mt-1">
+                    <p className="text-xs text-orange-600">
+                      ⚠️ Discrepância detectada: {formatCurrency(diagnostics.stockValueDiscrepancy)}
+                      <span className="text-muted-foreground ml-1">(preços atualizados após compra)</span>
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Cards de análise de margem */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Custo das Vendas</CardTitle>
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {formatCurrency(totalSalesCost)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Preço de compra dos produtos vendidos
+              {diagnostics?.salesWithoutCost > 0 && (
+                <span className="ml-1 text-yellow-600">
+                  (calculado por histórico FIFO)
+                </span>
+              )}
+            </p>
+            {diagnostics?.salesWithoutCost > 0 && (
+              <div className="mt-2 pt-2 border-t">
+                <p className="text-xs text-yellow-600">
+                  ⚠️ {diagnostics.salesWithoutCost} unidades vendidas sem custo calculável
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Margem de Lucro</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(profitMargin)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Receita - Custo das Vendas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Margem Percentual</CardTitle>
+            <Percent className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${profitMarginPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {profitMarginPercent.toFixed(2)}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Percentual de lucro sobre o custo
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Valor de Venda Potencial Total</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {formatCurrency(totalPotentialSaleValue)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Potencial de todas as compras (independente de vendas)
+            </p>
+            {totalPurchaseCost > 0 && totalPotentialSaleValue > 0 && (
+              <div className="mt-2 pt-2 border-t">
+                <p className="text-xs text-muted-foreground">
+                  Custo total das compras: <span className="font-semibold text-orange-600">
+                    {formatCurrency(totalPurchaseCost)}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Lucro potencial total: <span className={`font-semibold ${potentialProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(potentialProfit)}
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Margem potencial total: <span className={`font-semibold ${potentialMarginPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {potentialMarginPercent.toFixed(2)}%
+                  </span>
+                </p>
+              </div>
+            )}
+            {diagnostics?.productsWithoutSalePriceForPotential > 0 && (
+              <div className="mt-1">
+                <p className="text-xs text-yellow-600">
+                  ⚠️ {diagnostics.productsWithoutSalePriceForPotential} produto(s) sem preço de venda
+                  {diagnostics.productsWithoutSalePriceQuantityForPotential > 0 && (
+                    <span> ({diagnostics.productsWithoutSalePriceQuantityForPotential} unidades compradas)</span>
+                  )}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Gráfico comparativo de Compra vs Venda */}
+      {totalSalesCost > 0 || totalRevenue > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Análise de Margem: Custo vs Receita</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={[
+                {
+                  name: 'Custo das Vendas',
+                  valor: totalSalesCost,
+                },
+                {
+                  name: 'Receita Total',
+                  valor: totalRevenue,
+                },
+                {
+                  name: 'Lucro Líquido',
+                  valor: profitMargin,
+                },
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value: number | undefined) => formatCurrency(value || 0)} />
+                <Legend />
+                <Bar 
+                  dataKey="valor" 
+                  name="Valor"
+                  radius={[8, 8, 0, 0]}
+                >
+                  {[
+                    { valor: totalSalesCost },
+                    { valor: totalRevenue },
+                    { valor: profitMargin },
+                  ].map((entry, index) => {
+                    const colors = ['#f97316', '#10b981', profitMargin >= 0 ? '#10b981' : '#ef4444']
+                    return <Cell key={`cell-${index}`} fill={colors[index]} />
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-sm text-muted-foreground">Custo</p>
+                <p className="text-lg font-semibold text-orange-600">
+                  {formatCurrency(totalSalesCost)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Receita</p>
+                <p className="text-lg font-semibold text-green-600">
+                  {formatCurrency(totalRevenue)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Lucro</p>
+                <p className={`text-lg font-semibold ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(profitMargin)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Gráfico de movimentações diárias */}
       <Card>
@@ -427,6 +661,92 @@ export function ReportsContent() {
           </CardContent>
         </Card>
       ) : null}
+
+      {/* Vendas por Meio de Pagamento */}
+      {Object.keys(salesByPaymentMethod).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Vendas por Meio de Pagamento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Object.entries(salesByPaymentMethod as Record<string, { count: number; totalValue: number }>).map(([method, data]) => (
+                  <div key={method} className="p-4 border rounded-lg">
+                    <div className="text-sm font-medium text-muted-foreground mb-2">
+                      {paymentMethodLabels[method] || method}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Quantidade:</span>
+                        <span className="font-semibold">{data.count}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Valor Total:</span>
+                        <span className="font-semibold text-green-600">
+                          {formatCurrency(data.totalValue)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Gráfico de barras */}
+              <div className="mt-6">
+                <h3 className="text-sm font-medium mb-4">Valor Total por Meio de Pagamento</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={Object.entries(salesByPaymentMethod as Record<string, { count: number; totalValue: number }>).map(([method, data]) => ({
+                    name: paymentMethodLabels[method] || method,
+                    valor: data.totalValue,
+                    quantidade: data.count,
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: any) => formatCurrency(value)}
+                    />
+                    <Legend />
+                    <Bar dataKey="valor" fill="#10b981" name="Valor Total" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Gráfico de quantidade */}
+              <div className="mt-6">
+                <h3 className="text-sm font-medium mb-4">Quantidade de Vendas por Meio de Pagamento</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={Object.entries(salesByPaymentMethod as Record<string, { count: number; totalValue: number }>).map(([method, data]) => ({
+                    name: paymentMethodLabels[method] || method,
+                    quantidade: data.count,
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="quantidade" fill="#3b82f6" name="Quantidade de Vendas" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

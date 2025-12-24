@@ -5,6 +5,7 @@ export interface IChild extends Document {
   age?: number
   size?: string
   gender?: 'masculino' | 'feminino'
+  birthday?: Date // Data de aniversário
 }
 
 const ChildSchema = new Schema<IChild>({
@@ -18,12 +19,15 @@ const ChildSchema = new Schema<IChild>({
     min: [0, 'Idade não pode ser negativa'],
   },
   size: {
-    type: String,
-    trim: true,
+    type: [String],
+    default: [],
   },
   gender: {
     type: String,
     enum: ['masculino', 'feminino'],
+  },
+  birthday: {
+    type: Date,
   },
 })
 
@@ -33,6 +37,7 @@ export interface ICustomer extends Document {
   phone?: string
   address?: string
   instagram?: string
+  notes?: string
   children: IChild[]
   createdAt: Date
   updatedAt: Date
@@ -60,6 +65,10 @@ const CustomerSchema = new Schema<ICustomer>(
       trim: true,
     },
     instagram: {
+      type: String,
+      trim: true,
+    },
+    notes: {
       type: String,
       trim: true,
     },

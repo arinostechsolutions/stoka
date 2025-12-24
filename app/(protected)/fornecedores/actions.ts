@@ -17,9 +17,13 @@ export async function createSupplier(formData: FormData) {
   }
 
   try {
+    const categoryValue = formData.get('category') as string
+    
     const data = {
       name: formData.get('name') as string,
-      category: (formData.get('category') as 'geral' | 'vestuario') || 'geral',
+      category: (categoryValue && ['geral', 'vestuario', 'joia', 'sapato'].includes(categoryValue)) 
+        ? (categoryValue as 'geral' | 'vestuario' | 'joia' | 'sapato')
+        : 'geral',
       cnpj: formData.get('cnpj') as string || undefined,
       email: formData.get('email') as string || undefined,
       phone: formData.get('phone') as string || undefined,
@@ -28,21 +32,47 @@ export async function createSupplier(formData: FormData) {
     }
 
     const validatedData = supplierSchema.parse(data)
+    console.log('=== CREATE SUPPLIER - VALIDATED DATA ===')
+    console.log('Validated data:', validatedData)
 
     await connectDB()
 
-    await Supplier.create({
+    console.log('=== CREATE SUPPLIER - BEFORE CREATE ===')
+    console.log('User ID:', session.user.id)
+    
+    // Converte userId para ObjectId
+    const mongoose = await import('mongoose')
+    const userIdObjectId = new mongoose.default.Types.ObjectId(session.user.id as string)
+    
+    const supplierData = {
       ...validatedData,
-      userId: session.user.id as any,
-    })
+      userId: userIdObjectId,
+    }
+    console.log('Supplier data to create:', supplierData)
+
+    // Usa insertOne diretamente na collection para evitar problemas de cache do schema
+    const result = await Supplier.collection.insertOne(supplierData)
+    console.log('=== CREATE SUPPLIER - AFTER INSERT ===')
+    console.log('Insert result:', result)
+    console.log('Created supplier ID:', result.insertedId)
+
+    // Verifica se foi realmente criado
+    const verifySupplier = await Supplier.findOne({ _id: result.insertedId })
+    console.log('=== VERIFY SUPPLIER ===')
+    console.log('Supplier found in DB:', verifySupplier)
 
     revalidatePath('/fornecedores')
     return { success: true }
   } catch (error: any) {
+    console.error('=== CREATE SUPPLIER ERROR ===')
+    console.error('Error type:', error.constructor.name)
+    console.error('Error message:', error.message)
+    console.error('Error stack:', error.stack)
     if (error instanceof z.ZodError) {
+      console.error('Zod errors:', error.errors)
       return { error: error.errors[0].message }
     }
-    return { error: 'Erro ao criar fornecedor' }
+    return { error: error.message || 'Erro ao criar fornecedor' }
   }
 }
 
@@ -56,7 +86,7 @@ export async function updateSupplier(id: string, formData: FormData) {
   try {
     const data = {
       name: formData.get('name') as string,
-      category: (formData.get('category') as 'geral' | 'vestuario') || 'geral',
+      category: (formData.get('category') as 'geral' | 'vestuario' | 'joia' | 'sapato') || 'geral',
       cnpj: formData.get('cnpj') as string || undefined,
       email: formData.get('email') as string || undefined,
       phone: formData.get('phone') as string || undefined,

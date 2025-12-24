@@ -49,8 +49,15 @@ interface ProductFormProps {
     brand?: string
     material?: string
     imageUrl?: string
-  pre_venda?: boolean
-  genero?: 'masculino' | 'feminino' | 'unissex'
+    pre_venda?: boolean
+    genero?: 'masculino' | 'feminino' | 'unissex'
+    // Campos específicos para jóias
+    tipo_joia?: string
+    pedra?: string
+    quilate?: number
+    // Campos específicos para sapatos
+    numeração?: string
+    tipo_sapato?: string
   }
 }
 
@@ -69,6 +76,13 @@ export function ProductForm({ children, product }: ProductFormProps) {
   const [material, setMaterial] = useState(product?.material || '')
   const [genero, setGenero] = useState<'masculino' | 'feminino' | 'unissex' | ''>(product?.genero || '')
   const [pre_venda, setPre_venda] = useState(product?.pre_venda || false)
+  // Campos específicos para jóias
+  const [tipo_joia, setTipo_joia] = useState((product as any)?.tipo_joia || '')
+  const [pedra, setPedra] = useState((product as any)?.pedra || '')
+  const [quilate, setQuilate] = useState((product as any)?.quilate?.toString() || '')
+  // Campos específicos para sapatos
+  const [numeração, setNumeração] = useState((product as any)?.numeração || '')
+  const [tipo_sapato, setTipo_sapato] = useState((product as any)?.tipo_sapato || '')
   const [imageUrl, setImageUrl] = useState(product?.imageUrl || '')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(product?.imageUrl || null)
@@ -81,14 +95,18 @@ export function ProductForm({ children, product }: ProductFormProps) {
     queryFn: fetchSuppliers,
   })
   
-  // Verifica se o fornecedor selecionado é de vestuário
+  // Verifica a categoria do fornecedor selecionado
   const selectedSupplierData = React.useMemo(() => {
     return suppliers.find((s: any) => s._id === selectedSupplier)
   }, [suppliers, selectedSupplier])
   
-  const isVestuarioSupplier = React.useMemo(() => {
-    return selectedSupplierData?.category === 'vestuario'
+  const supplierCategory = React.useMemo(() => {
+    return selectedSupplierData?.category || 'geral'
   }, [selectedSupplierData])
+  
+  const isVestuarioSupplier = supplierCategory === 'vestuario'
+  const isJoiaSupplier = supplierCategory === 'joia'
+  const isSapatoSupplier = supplierCategory === 'sapato'
   
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,11 +268,7 @@ export function ProductForm({ children, product }: ProductFormProps) {
       // Garante que nome_vitrine seja sempre enviado (captura do formulário ou vazio)
       const nomeVitrineInput = form.querySelector<HTMLInputElement>('input[name="nome_vitrine"]')
       const nomeVitrineValue = nomeVitrineInput ? nomeVitrineInput.value || '' : ''
-      console.log('=== FORMULÁRIO - nome_vitrine ===')
-      console.log('Input encontrado:', !!nomeVitrineInput)
-      console.log('Valor do input:', nomeVitrineValue)
       formData.set('nome_vitrine', nomeVitrineValue)
-      console.log('Valor no formData:', formData.get('nome_vitrine'))
 
     // Garante que os campos de vestuário sejam sempre enviados (mesmo que vazios)
     // Isso é necessário para que o backend saiba que os campos foram enviados
@@ -263,14 +277,41 @@ export function ProductForm({ children, product }: ProductFormProps) {
       formData.set('color', color || '')
       formData.set('brand', brand || '')
       formData.set('material', material || '')
-        formData.set('genero', genero || '')
-      } else {
-        // Se não é fornecedor de vestuário, envia vazio para remover o campo
-        formData.set('genero', '')
+      formData.set('genero', genero || '')
+    } else {
+      // Se não é fornecedor de vestuário, envia vazio para remover o campo
+      formData.set('genero', '')
+    }
+
+    // Garante que os campos de jóias sejam sempre enviados (mesmo que vazios)
+    if (isJoiaSupplier) {
+      formData.set('tipo_joia', tipo_joia || '')
+      formData.set('pedra', pedra || '')
+      formData.set('quilate', quilate || '')
+      formData.set('material', material || '')
+    } else {
+      // Se não é fornecedor de jóias, envia vazio para remover os campos
+      formData.set('tipo_joia', '')
+      formData.set('pedra', '')
+      formData.set('quilate', '')
+    }
+
+    // Garante que os campos de sapatos sejam sempre enviados (mesmo que vazios)
+    if (isSapatoSupplier) {
+      // Usa 'numeracao' (sem acentuação) para evitar problemas de encoding no FormData
+      formData.set('numeracao', numeração || '')
+      formData.set('tipo_sapato', tipo_sapato || '')
+      formData.set('color', color || '')
+      formData.set('brand', brand || '')
+      formData.set('material', material || '')
+    } else {
+      // Se não é fornecedor de sapatos, envia vazio para remover os campos
+      formData.set('numeracao', '')
+      formData.set('tipo_sapato', '')
     }
       
-      // Adiciona pre_venda (sempre envia, mesmo que false)
-      formData.set('pre_venda', pre_venda ? 'true' : 'false')
+    // Adiciona pre_venda (sempre envia, mesmo que false)
+    formData.set('pre_venda', pre_venda ? 'true' : 'false')
 
     startTransition(async () => {
       const result = product
@@ -288,13 +329,18 @@ export function ProductForm({ children, product }: ProductFormProps) {
         setColor('')
         setBrand('')
         setMaterial('')
-          setGenero('')
-          setPre_venda(false)
-          setImageUrl('')
-          setImageFile(null)
-          setImagePreview(null)
-          setImageCompressionInfo(null)
-          setIsUploading(false)
+        setGenero('')
+        setTipo_joia('')
+        setPedra('')
+        setQuilate('')
+        setNumeração('')
+        setTipo_sapato('')
+        setPre_venda(false)
+        setImageUrl('')
+        setImageFile(null)
+        setImagePreview(null)
+        setImageCompressionInfo(null)
+        setIsUploading(false)
         router.refresh()
       }
     })
@@ -316,6 +362,11 @@ export function ProductForm({ children, product }: ProductFormProps) {
       setMaterial(product.material || '')
       setGenero(product.genero || '')
       setPre_venda(product.pre_venda || false)
+      setTipo_joia((product as any)?.tipo_joia || '')
+      setPedra((product as any)?.pedra || '')
+      setQuilate((product as any)?.quilate?.toString() || '')
+      setNumeração((product as any)?.numeração || '')
+      setTipo_sapato((product as any)?.tipo_sapato || '')
       setImageUrl(product.imageUrl || '')
       setImagePreview(product.imageUrl || null)
       setImageFile(null)
@@ -330,6 +381,11 @@ export function ProductForm({ children, product }: ProductFormProps) {
       setMaterial('')
       setGenero('')
       setPre_venda(false)
+      setTipo_joia('')
+      setPedra('')
+      setQuilate('')
+      setNumeração('')
+      setTipo_sapato('')
       setImageUrl('')
       setImageFile(null)
       setImagePreview(null)
@@ -388,11 +444,18 @@ export function ProductForm({ children, product }: ProductFormProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">Nenhum fornecedor</SelectItem>
-                      {suppliers.map((supplier: any) => (
-                        <SelectItem key={supplier._id} value={supplier._id}>
-                          {supplier.name} {supplier.category === 'vestuario' && '👕'}
-                        </SelectItem>
-                      ))}
+                      {suppliers.map((supplier: any) => {
+                        const categoryIcon = 
+                          supplier.category === 'vestuario' ? '👕' :
+                          supplier.category === 'joia' ? '💎' :
+                          supplier.category === 'sapato' ? '👟' :
+                          ''
+                        return (
+                          <SelectItem key={supplier._id} value={supplier._id}>
+                            {supplier.name} {categoryIcon}
+                          </SelectItem>
+                        )
+                      })}
                     </SelectContent>
                   </Select>
                 )}
@@ -489,6 +552,203 @@ export function ProductForm({ children, product }: ProductFormProps) {
                       <SelectItem value="unissex">Unissex</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+
+              {/* Campos de Jóias */}
+              {isJoiaSupplier && (
+                <div className="space-y-4 p-4 bg-amber-50 rounded-lg border-2 border-amber-200 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="h-5 w-5 text-amber-600" />
+                    <h3 className="font-semibold text-amber-900">Informações de Jóia</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="tipo_joia" className="text-sm font-semibold flex items-center gap-2">
+                        <Tag className="h-4 w-4" />
+                        Tipo de Jóia
+                      </Label>
+                      <Select value={tipo_joia} onValueChange={setTipo_joia}>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Não especificado</SelectItem>
+                          <SelectItem value="anel">Anel</SelectItem>
+                          <SelectItem value="brinco">Brinco</SelectItem>
+                          <SelectItem value="colar">Colar</SelectItem>
+                          <SelectItem value="pulseira">Pulseira</SelectItem>
+                          <SelectItem value="pingente">Pingente</SelectItem>
+                          <SelectItem value="broche">Broche</SelectItem>
+                          <SelectItem value="tiara">Tiara</SelectItem>
+                          <SelectItem value="outro">Outro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {/* Campo hidden para garantir que o valor seja enviado no formData */}
+                      <input type="hidden" name="tipo_joia" value={tipo_joia} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="material" className="text-sm font-semibold flex items-center gap-2">
+                        <Shirt className="h-4 w-4" />
+                        Material
+                      </Label>
+                      <Select value={material} onValueChange={setMaterial}>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Selecione o material" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Não especificado</SelectItem>
+                          <SelectItem value="ouro">Ouro</SelectItem>
+                          <SelectItem value="prata">Prata</SelectItem>
+                          <SelectItem value="ouro-branco">Ouro Branco</SelectItem>
+                          <SelectItem value="platina">Platina</SelectItem>
+                          <SelectItem value="aço">Aço</SelectItem>
+                          <SelectItem value="latão">Latão</SelectItem>
+                          <SelectItem value="outro">Outro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {/* Campo hidden para garantir que o valor seja enviado no formData */}
+                      <input type="hidden" name="material" value={material} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="pedra" className="text-sm font-semibold flex items-center gap-2">
+                        <Award className="h-4 w-4" />
+                        Pedra
+                      </Label>
+                      <Input
+                        id="pedra"
+                        name="pedra"
+                        value={pedra}
+                        onChange={(e) => setPedra(e.target.value)}
+                        placeholder="Ex: Diamante, Rubi, Esmeralda"
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="quilate" className="text-sm font-semibold flex items-center gap-2">
+                        <Hash className="h-4 w-4" />
+                        Quilate
+                      </Label>
+                      <Input
+                        id="quilate"
+                        name="quilate"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value={quilate}
+                        onChange={(e) => setQuilate(e.target.value)}
+                        placeholder="Ex: 18, 24"
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Campos de Sapatos */}
+              {isSapatoSupplier && (
+                <div className="space-y-4 p-4 bg-green-50 rounded-lg border-2 border-green-200 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Ruler className="h-5 w-5 text-green-600" />
+                    <h3 className="font-semibold text-green-900">Informações de Sapato</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="numeração" className="text-sm font-semibold flex items-center gap-2">
+                        <Ruler className="h-4 w-4" />
+                        Numeração
+                      </Label>
+                      <Input
+                        id="numeração"
+                        name="numeracao"
+                        value={numeração}
+                        onChange={(e) => setNumeração(e.target.value)}
+                        placeholder="Ex: 35, 36, 37, 38, 39, 40"
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tipo_sapato" className="text-sm font-semibold flex items-center gap-2">
+                        <Tag className="h-4 w-4" />
+                        Tipo de Sapato
+                      </Label>
+                      <Select value={tipo_sapato} onValueChange={setTipo_sapato}>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Não especificado</SelectItem>
+                          <SelectItem value="tênis">Tênis</SelectItem>
+                          <SelectItem value="sandália">Sandália</SelectItem>
+                          <SelectItem value="bota">Bota</SelectItem>
+                          <SelectItem value="sapato-social">Sapato Social</SelectItem>
+                          <SelectItem value="sapatilha">Sapatilha</SelectItem>
+                          <SelectItem value="chinelo">Chinelo</SelectItem>
+                          <SelectItem value="rasteira">Rasteira</SelectItem>
+                          <SelectItem value="outro">Outro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {/* Campo hidden para garantir que o valor seja enviado no formData */}
+                      <input type="hidden" name="tipo_sapato" value={tipo_sapato} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="color" className="text-sm font-semibold flex items-center gap-2">
+                        <Palette className="h-4 w-4" />
+                        Cor
+                      </Label>
+                      <Input
+                        id="color"
+                        name="color"
+                        value={color}
+                        onChange={(e) => setColor(e.target.value)}
+                        placeholder="Ex: Preto, Branco, Marrom"
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="brand" className="text-sm font-semibold flex items-center gap-2">
+                        <Award className="h-4 w-4" />
+                        Marca
+                      </Label>
+                      <Input
+                        id="brand"
+                        name="brand"
+                        value={brand}
+                        onChange={(e) => setBrand(e.target.value)}
+                        placeholder="Ex: Nike, Adidas, Vans"
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="material" className="text-sm font-semibold flex items-center gap-2">
+                      <Shirt className="h-4 w-4" />
+                      Material
+                    </Label>
+                    <Select value={material} onValueChange={setMaterial}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Selecione o material" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Não especificado</SelectItem>
+                        <SelectItem value="couro">Couro</SelectItem>
+                        <SelectItem value="sintético">Sintético</SelectItem>
+                        <SelectItem value="camurça">Camurça</SelectItem>
+                        <SelectItem value="tecido">Tecido</SelectItem>
+                        <SelectItem value="borracha">Borracha</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
 

@@ -44,6 +44,13 @@ interface ProductCardProps {
     imageUrl?: string
     pre_venda?: boolean
     genero?: 'masculino' | 'feminino' | 'unissex'
+    // Campos específicos para jóias
+    tipo_joia?: string
+    pedra?: string
+    quilate?: number
+    // Campos específicos para sapatos
+    numeração?: string
+    tipo_sapato?: string
   }
 }
 
@@ -103,6 +110,36 @@ export function ProductCard({ product }: ProductCardProps) {
             <Badge variant="outline" className="text-xs">
               <Ruler className="h-3 w-3 mr-1" />
               Tamanho: {product.size}
+            </Badge>
+          )}
+          {product.numeração && (
+            <Badge variant="outline" className="text-xs">
+              <Ruler className="h-3 w-3 mr-1" />
+              Numeração: {product.numeração}
+            </Badge>
+          )}
+          {product.tipo_joia && (
+            <Badge variant="outline" className="text-xs">
+              <Tag className="h-3 w-3 mr-1" />
+              {product.tipo_joia}
+            </Badge>
+          )}
+          {product.pedra && (
+            <Badge variant="outline" className="text-xs">
+              <Award className="h-3 w-3 mr-1" />
+              {product.pedra}
+            </Badge>
+          )}
+          {product.quilate && (
+            <Badge variant="outline" className="text-xs">
+              <Hash className="h-3 w-3 mr-1" />
+              {product.quilate}K
+            </Badge>
+          )}
+          {product.material && (
+            <Badge variant="outline" className="text-xs">
+              <Package className="h-3 w-3 mr-1" />
+              {product.material}
             </Badge>
           )}
           {product.sku && (
@@ -245,6 +282,11 @@ export function ProductCard({ product }: ProductCardProps) {
                 imageUrl: product.imageUrl,
                 pre_venda: product.pre_venda,
                 genero: product.genero,
+                tipo_joia: product.tipo_joia,
+                pedra: product.pedra,
+                quilate: product.quilate,
+                numeração: product.numeração,
+                tipo_sapato: product.tipo_sapato,
               }}
             >
               <Button variant="outline" size="sm" className="flex-1 sm:flex-initial sm:px-3">
