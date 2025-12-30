@@ -41,7 +41,7 @@ export default async function PublicStorePage({ params }: { params: { slug: stri
     _id: { $in: store.selectedProducts },
     quantity: { $gt: 0 }, // Apenas produtos com estoque
   })
-    .select('name nome_vitrine imageUrl salePrice brand size quantity pre_venda')
+    .select('name nome_vitrine imageUrl salePrice brand size quantity pre_venda genero')
     .lean()
 
   const serializedStore = JSON.parse(JSON.stringify(store))

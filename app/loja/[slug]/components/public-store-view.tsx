@@ -5,9 +5,16 @@ import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Package, Award, Ruler, ShoppingCart, MessageCircle, Check, X } from 'lucide-react'
+import { Package, Award, Ruler, ShoppingCart, MessageCircle, Check, X, Filter } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 
 interface Product {
   _id: string
@@ -19,6 +26,7 @@ interface Product {
   size?: string
   quantity: number
   pre_venda?: boolean
+  genero?: 'masculino' | 'feminino' | 'unissex'
 }
 
 interface Store {
@@ -39,6 +47,8 @@ interface PublicStoreViewProps {
 export function PublicStoreView({ store, products }: PublicStoreViewProps) {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [expandedImage, setExpandedImage] = useState<{ url: string; alt: string } | null>(null)
+  const [selectedSize, setSelectedSize] = useState<string>('')
+  const [selectedGenero, setSelectedGenero] = useState<string>('')
 
   const toggleProduct = useCallback((productId: string) => {
     setSelectedProducts((prev) => {
@@ -89,9 +99,37 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
     return `https://wa.me/${phone}?text=${encodedMessage}`
   }, [selectedProducts, products, store])
 
+  // Extrai tamanhos únicos dos produtos
+  const availableSizes = useMemo(() => {
+    const sizes = new Set<string>()
+    products.forEach((product) => {
+      if (product.size) {
+        sizes.add(product.size)
+      }
+    })
+    return Array.from(sizes).sort()
+  }, [products])
+
+  // Filtra produtos baseado nos filtros
+  const filteredProducts = useMemo(() => {
+    let filtered = products
+
+    // Filtro de tamanho
+    if (selectedSize) {
+      filtered = filtered.filter((product) => product.size === selectedSize)
+    }
+
+    // Filtro de gênero
+    if (selectedGenero) {
+      filtered = filtered.filter((product) => product.genero === selectedGenero)
+    }
+
+    return filtered
+  }, [products, selectedSize, selectedGenero])
+
   const selectedProductsData = useMemo(() => {
-    return products.filter((p) => selectedProducts.includes(p._id))
-  }, [products, selectedProducts])
+    return filteredProducts.filter((p) => selectedProducts.includes(p._id))
+  }, [filteredProducts, selectedProducts])
 
   const backgroundColor = store.backgroundColor || '#FFFFFF'
 
@@ -130,10 +168,72 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
           </div>
         </div>
 
+        {/* Filtros */}
+        {products.length > 0 && (
+          <div className="mb-6 max-w-2xl mx-auto relative z-50">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 md:p-6 border border-gray-200 shadow-sm relative">
+              <div className="flex items-center gap-2 mb-4">
+                <Filter className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold">Filtros</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="size-filter" className="text-sm font-medium">
+                    Tamanho
+                  </Label>
+                  <Select value={selectedSize} onValueChange={setSelectedSize}>
+                    <SelectTrigger id="size-filter" className="h-11 bg-white">
+                      <SelectValue placeholder="Todos os tamanhos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todos os tamanhos</SelectItem>
+                      {availableSizes.map((size) => (
+                        <SelectItem key={size} value={size}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="genero-filter" className="text-sm font-medium">
+                    Gênero
+                  </Label>
+                  <Select value={selectedGenero} onValueChange={setSelectedGenero}>
+                    <SelectTrigger id="genero-filter" className="h-11 bg-white">
+                      <SelectValue placeholder="Todos os gêneros" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todos os gêneros</SelectItem>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="feminino">Feminino</SelectItem>
+                      <SelectItem value="unissex">Unissex</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {(selectedSize || selectedGenero) && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setSelectedSize('')
+                      setSelectedGenero('')
+                    }}
+                    className="text-sm text-primary hover:text-primary/80 underline transition-colors"
+                  >
+                    Limpar filtros
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Produtos */}
-        {products.length > 0 ? (
+        {filteredProducts.length > 0 ? (
           <div className="grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8 max-w-xs mx-auto md:max-w-none">
-            {products.map((product) => {
+            {filteredProducts.map((product) => {
               const isSelected = selectedProducts.includes(product._id)
               const displayName = product.nome_vitrine || product.name
 
@@ -230,15 +330,26 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
                             {formatCurrency(product.salePrice)}
                           </p>
                         )}
-                        <p className="text-xs md:text-sm text-muted-foreground">
-                          Estoque: {product.quantity}
-                        </p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               )
             })}
+          </div>
+        ) : products.length > 0 ? (
+          <div className="text-center py-12">
+            <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-lg text-muted-foreground">Nenhum produto encontrado com os filtros selecionados</p>
+            <button
+              onClick={() => {
+                setSelectedSize('')
+                setSelectedGenero('')
+              }}
+              className="mt-4 text-sm text-primary hover:text-primary/80 underline transition-colors"
+            >
+              Limpar filtros
+            </button>
           </div>
         ) : (
           <div className="text-center py-12">

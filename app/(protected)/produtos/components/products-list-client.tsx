@@ -29,8 +29,24 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [selectedSupplier, setSelectedSupplier] = useState('all')
+  const [selectedSize, setSelectedSize] = useState<string>('')
+  const [selectedGenero, setSelectedGenero] = useState<string>('')
+  const [preVendaFilter, setPreVendaFilter] = useState<string>('all') // 'all', 'yes', 'no'
+  const [estoqueFilter, setEstoqueFilter] = useState<string>('all') // 'all', 'com_estoque', 'sem_estoque', 'estoque_baixo'
+  const [imagemFilter, setImagemFilter] = useState<string>('all') // 'all', 'com_imagem', 'sem_imagem'
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 6
+
+  // Extrai tamanhos únicos dos produtos
+  const availableSizes = useMemo(() => {
+    const sizes = new Set<string>()
+    initialProducts.forEach((product: any) => {
+      if (product.size) {
+        sizes.add(product.size)
+      }
+    })
+    return Array.from(sizes).sort()
+  }, [initialProducts])
 
   // Filtra produtos baseado no fornecedor selecionado
   const filteredProductsBySupplier = useMemo(() => {
@@ -44,7 +60,7 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
   }, [initialProducts, selectedSupplier])
 
   // Filtra produtos que tiveram movimentações no período selecionado
-  const filteredProducts = useMemo(() => {
+  const filteredProductsByDate = useMemo(() => {
     if (!startDate && !endDate) {
       return filteredProductsBySupplier
     }
@@ -55,6 +71,46 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
     return filteredProductsBySupplier
   }, [filteredProductsBySupplier, startDate, endDate])
 
+  // Aplica todos os filtros
+  const filteredProducts = useMemo(() => {
+    let filtered = filteredProductsByDate
+
+    // Filtro de tamanho
+    if (selectedSize) {
+      filtered = filtered.filter((product: any) => product.size === selectedSize)
+    }
+
+    // Filtro de gênero
+    if (selectedGenero) {
+      filtered = filtered.filter((product: any) => product.genero === selectedGenero)
+    }
+
+    // Filtro de pré-venda
+    if (preVendaFilter === 'yes') {
+      filtered = filtered.filter((product: any) => product.pre_venda === true)
+    } else if (preVendaFilter === 'no') {
+      filtered = filtered.filter((product: any) => !product.pre_venda || product.pre_venda === false)
+    }
+
+    // Filtro de estoque
+    if (estoqueFilter === 'com_estoque') {
+      filtered = filtered.filter((product: any) => product.quantity > 0)
+    } else if (estoqueFilter === 'sem_estoque') {
+      filtered = filtered.filter((product: any) => product.quantity === 0)
+    } else if (estoqueFilter === 'estoque_baixo') {
+      filtered = filtered.filter((product: any) => product.quantity < product.minQuantity && product.quantity > 0)
+    }
+
+    // Filtro de imagem
+    if (imagemFilter === 'com_imagem') {
+      filtered = filtered.filter((product: any) => product.imageUrl && product.imageUrl.trim() !== '')
+    } else if (imagemFilter === 'sem_imagem') {
+      filtered = filtered.filter((product: any) => !product.imageUrl || product.imageUrl.trim() === '')
+    }
+
+    return filtered
+  }, [filteredProductsByDate, selectedSize, selectedGenero, preVendaFilter, estoqueFilter, imagemFilter])
+
   // Calcula paginação
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -64,12 +120,17 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
   // Reset para primeira página quando os filtros mudarem
   useEffect(() => {
     setCurrentPage(1)
-  }, [startDate, endDate, selectedSupplier, viewMode])
+  }, [startDate, endDate, selectedSupplier, selectedSize, selectedGenero, preVendaFilter, estoqueFilter, imagemFilter, viewMode])
 
   const handleResetFilters = () => {
     setStartDate('')
     setEndDate('')
     setSelectedSupplier('all')
+    setSelectedSize('')
+    setSelectedGenero('')
+    setPreVendaFilter('all')
+    setEstoqueFilter('all')
+    setImagemFilter('all')
     setCurrentPage(1)
   }
 
@@ -130,63 +191,205 @@ export function ProductsListClient({ initialProducts, suppliers }: ProductsListC
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Data Inicial</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">Data Final</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="supplier">Fornecedor</Label>
-              <Select 
-                value={selectedSupplier} 
-                onValueChange={setSelectedSupplier}
-              >
-                <SelectTrigger id="supplier">
-                  <SelectValue
-                    placeholder="Todos os fornecedores"
-                    displayValue={
-                      selectedSupplier === 'all'
-                        ? 'Todos os fornecedores'
-                        : suppliers.find((s: any) => s._id.toString() === selectedSupplier)?.name || ''
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os fornecedores</SelectItem>
-                  {suppliers.map((supplier: any) => (
-                    <SelectItem key={supplier._id.toString()} value={supplier._id.toString()}>
-                      {supplier.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <CardContent className="space-y-6 relative z-50">
+          {/* Filtros de Data */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold text-muted-foreground">Período</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate" className="text-xs font-medium">
+                  Data Inicial
+                </Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endDate" className="text-xs font-medium">
+                  Data Final
+                </Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="h-10"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <Button variant="outline" onClick={handleResetFilters} className="w-full md:w-auto">
+          {/* Separador */}
+          <div className="border-t border-border"></div>
+
+          {/* Filtros de Produto */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold text-muted-foreground">Produto</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative">
+              <div className="space-y-2">
+                <Label htmlFor="supplier" className="text-xs font-medium">
+                  Fornecedor
+                </Label>
+                <Select 
+                  value={selectedSupplier} 
+                  onValueChange={setSelectedSupplier}
+                >
+                  <SelectTrigger id="supplier" className="h-10">
+                    <SelectValue
+                      placeholder="Todos os fornecedores"
+                      displayValue={
+                        selectedSupplier === 'all'
+                          ? 'Todos os fornecedores'
+                          : suppliers.find((s: any) => s._id.toString() === selectedSupplier)?.name || ''
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os fornecedores</SelectItem>
+                    {suppliers.map((supplier: any) => (
+                      <SelectItem key={supplier._id.toString()} value={supplier._id.toString()}>
+                        {supplier.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="size-filter" className="text-xs font-medium">
+                  Tamanho
+                </Label>
+                <Select value={selectedSize} onValueChange={setSelectedSize}>
+                  <SelectTrigger id="size-filter" className="h-10">
+                    <SelectValue placeholder="Todos os tamanhos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os tamanhos</SelectItem>
+                    {availableSizes.map((size) => (
+                      <SelectItem key={size} value={size}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="genero-filter" className="text-xs font-medium">
+                  Gênero
+                </Label>
+                <Select value={selectedGenero} onValueChange={setSelectedGenero}>
+                  <SelectTrigger id="genero-filter" className="h-10">
+                    <SelectValue placeholder="Todos os gêneros" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os gêneros</SelectItem>
+                    <SelectItem value="masculino">Masculino</SelectItem>
+                    <SelectItem value="feminino">Feminino</SelectItem>
+                    <SelectItem value="unissex">Unissex</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pre-venda-filter" className="text-xs font-medium">
+                  Pré-venda
+                </Label>
+                <Select value={preVendaFilter} onValueChange={setPreVendaFilter}>
+                  <SelectTrigger id="pre-venda-filter" className="h-10">
+                    <SelectValue 
+                      placeholder="Todos"
+                      displayValue={
+                        preVendaFilter === 'all' 
+                          ? 'Todos' 
+                          : preVendaFilter === 'yes' 
+                          ? 'Sim (Pré-venda)' 
+                          : 'Não (Pronta entrega)'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="yes">Sim (Pré-venda)</SelectItem>
+                    <SelectItem value="no">Não (Pronta entrega)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="estoque-filter" className="text-xs font-medium">
+                  Estoque
+                </Label>
+                <Select value={estoqueFilter} onValueChange={setEstoqueFilter}>
+                  <SelectTrigger id="estoque-filter" className="h-10">
+                    <SelectValue 
+                      placeholder="Todos"
+                      displayValue={
+                        estoqueFilter === 'all' 
+                          ? 'Todos' 
+                          : estoqueFilter === 'com_estoque' 
+                          ? 'Com estoque' 
+                          : estoqueFilter === 'sem_estoque'
+                          ? 'Sem estoque'
+                          : 'Estoque baixo'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="com_estoque">Com estoque</SelectItem>
+                    <SelectItem value="sem_estoque">Sem estoque</SelectItem>
+                    <SelectItem value="estoque_baixo">Estoque baixo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="imagem-filter" className="text-xs font-medium">
+                  Imagem
+                </Label>
+                <Select value={imagemFilter} onValueChange={setImagemFilter}>
+                  <SelectTrigger id="imagem-filter" className="h-10">
+                    <SelectValue 
+                      placeholder="Todos"
+                      displayValue={
+                        imagemFilter === 'all' 
+                          ? 'Todos' 
+                          : imagemFilter === 'com_imagem' 
+                          ? 'Com imagem' 
+                          : 'Sem imagem'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="com_imagem">Com imagem</SelectItem>
+                    <SelectItem value="sem_imagem">Sem imagem</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Separador */}
+          <div className="border-t border-border"></div>
+
+          {/* Ações e Contador */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-2">
+            <Button 
+              variant="outline" 
+              onClick={handleResetFilters} 
+              className="w-full md:w-auto h-10"
+            >
               Limpar Filtros
             </Button>
-            <div className="text-sm text-muted-foreground text-center md:text-right">
-              {filteredProducts.length} de {initialProducts.length} produtos
+            <div className="text-sm font-medium text-muted-foreground text-center md:text-right">
+              Mostrando <span className="text-foreground font-semibold">{filteredProducts.length}</span> de{' '}
+              <span className="text-foreground font-semibold">{initialProducts.length}</span> produtos
             </div>
           </div>
         </CardContent>

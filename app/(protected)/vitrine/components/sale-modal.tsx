@@ -26,6 +26,7 @@ import { createSale } from '@/app/(protected)/movimentacoes/actions'
 import { formatCurrency, formatPhone, getWhatsAppUrl } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { Card } from '@/components/ui/card'
+import Image from 'next/image'
 
 interface SaleModalProps {
   open: boolean
@@ -331,12 +332,30 @@ export function SaleModal({ open, onOpenChange, product, allProducts }: SaleModa
                         <div
                           key={p._id}
                           onClick={() => addProductToSale(p)}
-                          className="p-2 cursor-pointer hover:bg-muted transition-colors"
+                          className="p-2 cursor-pointer hover:bg-muted transition-colors flex items-start gap-3"
                         >
-                          <div className="font-medium">{p.name || p.nome_vitrine}</div>
-                          {p.brand && <div className="text-xs text-muted-foreground">Marca: {p.brand}</div>}
-                          <div className="text-xs text-muted-foreground">
-                            Estoque: {p.quantity} | Preço: {formatCurrency(p.salePrice || 0)}
+                          {p.imageUrl && (
+                            <div className="relative w-12 h-12 rounded-md overflow-hidden border bg-muted shrink-0">
+                              <Image
+                                src={p.imageUrl}
+                                alt={p.name || p.nome_vitrine || 'Produto'}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">{p.name || p.nome_vitrine}</div>
+                            {p.brand && <div className="text-xs text-muted-foreground">Marca: {p.brand}</div>}
+                            {p.size && (
+                              <div className="text-xs font-semibold text-primary mt-0.5">
+                                Tamanho: {p.size}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              Estoque: {p.quantity} | Preço: {formatCurrency(p.salePrice || 0)}
+                            </div>
                           </div>
                         </div>
                       ))}

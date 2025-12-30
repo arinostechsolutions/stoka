@@ -65,7 +65,7 @@ export async function GET(request: Request) {
 
     // Busca produtos sem populate primeiro para verificar o formato do supplierId
     let products = await Product.find(filter)
-      .select('_id name nome_vitrine imageUrl salePrice quantity supplierId brand size purchasePrice pre_venda')
+      .select('_id name nome_vitrine imageUrl salePrice quantity supplierId brand size purchasePrice pre_venda genero')
       .sort({ name: 1 })
       .populate({
         path: 'supplierId',
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
       console.log('⚠️ Tentando busca alternativa para supplierId:', supplierId)
       // Tenta buscar todos os produtos do usuário e filtrar manualmente
       const allProducts = await Product.find({ userId: session.user.id as any })
-        .select('_id name nome_vitrine imageUrl salePrice quantity supplierId brand size purchasePrice pre_venda')
+        .select('_id name nome_vitrine imageUrl salePrice quantity supplierId brand size purchasePrice pre_venda genero')
         .populate({
           path: 'supplierId',
           model: Supplier,

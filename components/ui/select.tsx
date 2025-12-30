@@ -130,7 +130,7 @@ const SelectContent = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        'absolute z-[9999] mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg',
+        'absolute z-[99999] mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg',
         'max-h-[300px] overflow-auto',
         className
       )}
