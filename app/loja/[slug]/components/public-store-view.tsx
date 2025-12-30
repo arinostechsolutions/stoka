@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { useStoreAnalytics } from '@/hooks/useStoreAnalytics'
 
 interface Product {
   _id: string
@@ -49,21 +50,65 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
   const [expandedImage, setExpandedImage] = useState<{ url: string; alt: string } | null>(null)
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [selectedGenero, setSelectedGenero] = useState<string>('')
+  const viewedProductsRef = useRef<Set<string>>(new Set())
+
+  // Inicializa analytics
+  const { trackEvent } = useStoreAnalytics({ 
+    storeId: store._id,
+    enabled: true 
+  })
+
+  // Track visualização de produtos quando aparecem na tela
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const productId = entry.target.getAttribute('data-product-id')
+            if (productId && !viewedProductsRef.current.has(productId)) {
+              viewedProductsRef.current.add(productId)
+              trackEvent('product_view', { productId })
+            }
+          }
+        })
+      },
+      { threshold: 0.5 }
+    )
+
+    // Observa todos os cards de produtos
+    const productCards = document.querySelectorAll('[data-product-id]')
+    productCards.forEach((card) => observer.observe(card))
+
+    return () => {
+      productCards.forEach((card) => observer.unobserve(card))
+      observer.disconnect()
+    }
+  }, [products, trackEvent])
 
   const toggleProduct = useCallback((productId: string) => {
     setSelectedProducts((prev) => {
-      if (prev.includes(productId)) {
+      const isSelected = prev.includes(productId)
+      if (isSelected) {
+        // Deselecionou
+        trackEvent('product_unselect', { productId })
         return prev.filter((id) => id !== productId)
       } else {
+        // Selecionou
+        trackEvent('product_select', { productId })
         return [...prev, productId]
       }
     })
-  }, [])
+  }, [trackEvent])
 
   const generateWhatsAppLink = useCallback(() => {
     if (selectedProducts.length === 0) return '#'
 
     const selectedProductsData = products.filter((p) => selectedProducts.includes(p._id))
+    
+    // Track clique no WhatsApp
+    trackEvent('whatsapp_click', { 
+      productsCount: selectedProducts.length 
+    })
     
     // Monta a mensagem
     let message = store.whatsappMessage + '\n\n'
@@ -97,7 +142,7 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
     }
 
     return `https://wa.me/${phone}?text=${encodedMessage}`
-  }, [selectedProducts, products, store])
+  }, [selectedProducts, products, store, trackEvent])
 
   // Extrai tamanhos únicos dos produtos
   const availableSizes = useMemo(() => {
@@ -109,6 +154,19 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
     })
     return Array.from(sizes).sort()
   }, [products])
+
+  // Track uso de filtros
+  useEffect(() => {
+    if (selectedSize) {
+      trackEvent('filter_used', { filterType: 'size', filterValue: selectedSize })
+    }
+  }, [selectedSize, trackEvent])
+
+  useEffect(() => {
+    if (selectedGenero) {
+      trackEvent('filter_used', { filterType: 'genero', filterValue: selectedGenero })
+    }
+  }, [selectedGenero, trackEvent])
 
   // Filtra produtos baseado nos filtros
   const filteredProducts = useMemo(() => {
@@ -240,6 +298,7 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
               return (
                 <Card
                   key={product._id}
+                  data-product-id={product._id}
                   className={`overflow-hidden transition-all duration-300 cursor-pointer rounded-xl ${
                     isSelected
                       ? 'border-primary ring-2 ring-primary scale-[1.02] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]'
@@ -316,6 +375,7 @@ export function PublicStoreView({ store, products }: PublicStoreViewProps) {
                             onClick={(e) => {
                               e.stopPropagation()
                               setExpandedImage({ url: product.imageUrl!, alt: displayName })
+                              trackEvent('image_expand', { productId: product._id })
                             }}
                             className="text-xs text-primary hover:text-primary/80 underline transition-colors"
                           >

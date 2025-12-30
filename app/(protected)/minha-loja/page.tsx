@@ -6,7 +6,7 @@ import PublicStore from '@/lib/models/PublicStore'
 import { PublicStoreForm } from './components/public-store-form'
 import { DeleteStoreButton } from './components/delete-store-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Globe, ExternalLink } from 'lucide-react'
+import { Globe, ExternalLink, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -40,12 +40,20 @@ export default async function MinhaLojaPage() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-green-800">Sua loja está ativa!</span>
-              <Link href={`/loja/${serializedStore.slug}`} target="_blank">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  Ver página pública
-                </Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/minha-loja/analytics">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Analytics
+                  </Button>
+                </Link>
+                <Link href={`/loja/${serializedStore.slug}`} target="_blank">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    Ver página pública
+                  </Button>
+                </Link>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>

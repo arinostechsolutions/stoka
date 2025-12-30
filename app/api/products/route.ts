@@ -96,11 +96,6 @@ export async function GET(request: Request) {
       })
       console.log('Produtos encontrados com filtro manual:', products.length)
     }
-
-    // Debug: verifica se os produtos estão sendo filtrados corretamente
-    console.log('=== API PRODUCTS DEBUG ===')
-    console.log('supplierId recebido:', supplierId)
-    console.log('filter completo:', JSON.stringify(filter, null, 2))
     
     // Se não encontrou produtos, busca todos para verificar se existem produtos com esse supplierId
     if (products.length === 0 && supplierId) {
