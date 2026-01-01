@@ -67,18 +67,8 @@ async function CustomersList() {
   const serializedCustomers = JSON.parse(JSON.stringify(customers))
   const serializedMovementsByCustomer = JSON.parse(JSON.stringify(movementsByCustomer))
   
-  // Debug: log das movimentações no servidor
-  console.log('=== SERVER: Movimentações por cliente ===')
-  console.log('Total de clientes com movimentações:', Object.keys(movementsByCustomer).length)
   Object.entries(movementsByCustomer).forEach(([customerId, movs]) => {
     const withSaleGroupId = movs.filter((m: any) => m.saleGroupId)
-    if (withSaleGroupId.length > 0) {
-      console.log(`Cliente ${customerId}:`, {
-        totalMovements: movs.length,
-        withSaleGroupId: withSaleGroupId.length,
-        saleGroupIds: [...new Set(withSaleGroupId.map((m: any) => m.saleGroupId))],
-      })
-    }
   })
 
   return <CustomersListClient initialCustomers={serializedCustomers} movementsByCustomer={serializedMovementsByCustomer} />

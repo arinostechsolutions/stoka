@@ -38,13 +38,9 @@ async function fetchProducts(supplierId?: string) {
     params.append('supplierId', supplierId)
   }
   const url = `/api/products?${params.toString()}`
-  console.log('=== FRONTEND FETCH PRODUCTS ===')
-  console.log('supplierId recebido:', supplierId)
-  console.log('URL:', url)
   const res = await fetch(url)
   if (!res.ok) throw new Error('Erro ao carregar produtos')
   const data = await res.json()
-  console.log('Produtos retornados:', data.length)
   return data
 }
 
@@ -82,11 +78,6 @@ export function MovementForm({ children, productId }: MovementFormProps) {
   
   // Debug: log dos produtos recebidos
   useEffect(() => {
-    console.log('=== PRODUCTS STATE UPDATE ===')
-    console.log('products:', products)
-    console.log('products.length:', products?.length || 0)
-    console.log('isLoading:', isLoading)
-    console.log('selectedSupplier:', selectedSupplier)
   }, [products, isLoading, selectedSupplier])
 
   const { data: suppliers = [], isLoading: isLoadingSuppliers } = useQuery({
@@ -107,7 +98,6 @@ export function MovementForm({ children, productId }: MovementFormProps) {
   // Recarrega produtos quando o fornecedor muda
   useEffect(() => {
     if (open && selectedSupplier) {
-      console.log('Fornecedor mudou, recarregando produtos:', selectedSupplier)
       queryClient.invalidateQueries({ queryKey: ['products', selectedSupplier] })
       refetch()
     }
@@ -397,12 +387,6 @@ export function MovementForm({ children, productId }: MovementFormProps) {
                     </SelectTrigger>
                       <SelectContent>
                         {(() => {
-                          console.log('=== RENDER SELECT CONTENT ===')
-                          console.log('products.length:', products.length)
-                          console.log('products:', products)
-                          console.log('isLoading:', isLoading)
-                          console.log('selectedSupplier:', selectedSupplier)
-                          
                           if (isLoading) {
                             return (
                               <div className="px-2 py-1.5 text-sm text-muted-foreground">

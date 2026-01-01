@@ -227,12 +227,6 @@ export function PublicStoreForm({ store }: PublicStoreFormProps) {
     formData.set('backgroundColor', backgroundColor || '#FFFFFF')
     formData.set('logoUrl', finalLogoUrl || '')
 
-    console.log('=== FORMULÁRIO - ANTES DE ENVIAR ===')
-    console.log('backgroundColor no estado:', backgroundColor)
-    console.log('finalLogoUrl:', finalLogoUrl)
-    console.log('backgroundColor no FormData:', formData.get('backgroundColor'))
-    console.log('logoUrl no FormData:', formData.get('logoUrl'))
-
     startTransition(async () => {
       const result = store
         ? await updatePublicStore(store._id, formData)

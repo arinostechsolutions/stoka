@@ -32,13 +32,9 @@ export async function createSupplier(formData: FormData) {
     }
 
     const validatedData = supplierSchema.parse(data)
-    console.log('=== CREATE SUPPLIER - VALIDATED DATA ===')
-    console.log('Validated data:', validatedData)
 
     await connectDB()
 
-    console.log('=== CREATE SUPPLIER - BEFORE CREATE ===')
-    console.log('User ID:', session.user.id)
     
     // Converte userId para ObjectId
     const mongoose = await import('mongoose')
@@ -48,28 +44,17 @@ export async function createSupplier(formData: FormData) {
       ...validatedData,
       userId: userIdObjectId,
     }
-    console.log('Supplier data to create:', supplierData)
 
     // Usa insertOne diretamente na collection para evitar problemas de cache do schema
     const result = await Supplier.collection.insertOne(supplierData)
-    console.log('=== CREATE SUPPLIER - AFTER INSERT ===')
-    console.log('Insert result:', result)
-    console.log('Created supplier ID:', result.insertedId)
 
     // Verifica se foi realmente criado
     const verifySupplier = await Supplier.findOne({ _id: result.insertedId })
-    console.log('=== VERIFY SUPPLIER ===')
-    console.log('Supplier found in DB:', verifySupplier)
 
     revalidatePath('/fornecedores')
     return { success: true }
   } catch (error: any) {
-    console.error('=== CREATE SUPPLIER ERROR ===')
-    console.error('Error type:', error.constructor.name)
-    console.error('Error message:', error.message)
-    console.error('Error stack:', error.stack)
     if (error instanceof z.ZodError) {
-      console.error('Zod errors:', error.errors)
       return { error: error.errors[0].message }
     }
     return { error: error.message || 'Erro ao criar fornecedor' }

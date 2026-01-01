@@ -48,17 +48,7 @@ export async function createPublicStore(formData: FormData) {
       isActive,
     }
 
-    console.log('=== CREATE - ANTES DA VALIDAÇÃO ===')
-    console.log('data.backgroundColor:', data.backgroundColor)
-    console.log('data.logoUrl:', data.logoUrl)
-    console.log('data completo:', JSON.stringify(data, null, 2))
-
     const validatedData = publicStoreSchema.parse(data)
-
-    console.log('=== CREATE - APÓS VALIDAÇÃO ===')
-    console.log('validatedData.backgroundColor:', validatedData.backgroundColor)
-    console.log('validatedData.logoUrl:', validatedData.logoUrl)
-    console.log('validatedData completo:', JSON.stringify(validatedData, null, 2))
 
     await connectDB()
 
@@ -75,35 +65,17 @@ export async function createPublicStore(formData: FormData) {
       ...validatedData,
     }
 
-    console.log('=== ANTES DE ADICIONAR CAMPOS EXTRAS ===')
-    console.log('createData.backgroundColor:', createData.backgroundColor)
-    console.log('createData.logoUrl:', createData.logoUrl)
-
     // Adiciona backgroundColor diretamente se fornecido e válido (ignora validação do Zod)
     const bgColor = backgroundColor?.trim()
-    console.log('bgColor processado:', bgColor)
-    console.log('bgColor match:', bgColor?.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/))
     if (bgColor && bgColor.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
       createData.backgroundColor = bgColor
-      console.log('backgroundColor adicionado ao createData:', bgColor)
-    } else {
-      console.log('backgroundColor NÃO adicionado - bgColor:', bgColor, 'match:', bgColor?.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/))
     }
 
     // Adiciona logoUrl diretamente se fornecido (ignora validação do Zod)
     const logo = logoUrl?.trim()
-    console.log('logo processado:', logo)
     if (logo && logo.length > 0) {
       createData.logoUrl = logo
-      console.log('logoUrl adicionado ao createData:', logo)
-    } else {
-      console.log('logoUrl NÃO adicionado - logo:', logo)
     }
-
-    console.log('=== CREATE - ANTES DE CRIAR NO BANCO ===')
-    console.log('createData.backgroundColor:', createData.backgroundColor)
-    console.log('createData.logoUrl:', createData.logoUrl)
-    console.log('createData completo:', JSON.stringify(createData, null, 2))
 
     // Converte userId e selectedProducts para ObjectId
     const insertData: any = {
@@ -115,22 +87,10 @@ export async function createPublicStore(formData: FormData) {
     // Usa insertOne diretamente para evitar validação do Mongoose
     const result = await PublicStore.collection.insertOne(insertData)
     
-    console.log('=== CREATE - APÓS INSERTONE ===')
-    console.log('insertOne result:', result.insertedId)
-    console.log('insertData.backgroundColor:', insertData.backgroundColor)
-    console.log('insertData.logoUrl:', insertData.logoUrl)
-    
     // Busca o documento criado diretamente da collection para ver o que foi salvo
     const rawStore = await PublicStore.collection.findOne({ _id: result.insertedId })
-    console.log('=== RAW STORE FROM COLLECTION ===')
-    console.log('rawStore.backgroundColor:', rawStore?.backgroundColor)
-    console.log('rawStore.logoUrl:', rawStore?.logoUrl)
-    
     // Busca usando Mongoose
     const finalStore = await PublicStore.findById(result.insertedId).lean()
-    console.log('=== STORE VIA MONGOOSE ===')
-    console.log('finalStore.backgroundColor:', finalStore?.backgroundColor)
-    console.log('finalStore.logoUrl:', finalStore?.logoUrl)
 
     revalidatePath('/minha-loja')
     return { success: true }
@@ -193,17 +153,7 @@ export async function updatePublicStore(id: string, formData: FormData) {
       data.logoUrl = logoUrl.trim()
     }
 
-    console.log('=== UPDATE - ANTES DA VALIDAÇÃO ===')
-    console.log('data.backgroundColor:', data.backgroundColor)
-    console.log('data.logoUrl:', data.logoUrl)
-    console.log('data completo:', JSON.stringify(data, null, 2))
-
     const validatedData = publicStoreSchema.parse(data)
-
-    console.log('=== UPDATE - APÓS VALIDAÇÃO ===')
-    console.log('validatedData.backgroundColor:', validatedData.backgroundColor)
-    console.log('validatedData.logoUrl:', validatedData.logoUrl)
-    console.log('validatedData completo:', JSON.stringify(validatedData, null, 2))
 
     await connectDB()
 
@@ -253,11 +203,6 @@ export async function updatePublicStore(id: string, formData: FormData) {
       updateData.logoUrl = null
     }
 
-    console.log('=== UPDATE - ANTES DE ATUALIZAR ===')
-    console.log('updateData.backgroundColor:', updateData.backgroundColor)
-    console.log('updateData.logoUrl:', updateData.logoUrl)
-    console.log('updateData completo:', JSON.stringify(updateData, null, 2))
-
     // Usa collection.updateOne diretamente para garantir que os campos sejam atualizados
     const objectId = new mongoose.Types.ObjectId(id)
     const updateResult = await PublicStore.collection.updateOne(
@@ -265,21 +210,10 @@ export async function updatePublicStore(id: string, formData: FormData) {
       { $set: updateData }
     )
 
-    console.log('=== UPDATE - APÓS ATUALIZAR ===')
-    console.log('updateResult:', updateResult)
-    
     // Busca o documento atualizado diretamente da collection
     const rawStore = await PublicStore.collection.findOne({ _id: objectId })
-    console.log('=== RAW STORE FROM COLLECTION ===')
-    console.log('rawStore.backgroundColor:', rawStore?.backgroundColor)
-    console.log('rawStore.logoUrl:', rawStore?.logoUrl)
-    
     // Busca usando Mongoose
     const finalStore = await PublicStore.findById(id).lean()
-    console.log('=== STORE VIA MONGOOSE ===')
-    console.log('finalStore.backgroundColor:', finalStore?.backgroundColor)
-    console.log('finalStore.logoUrl:', finalStore?.logoUrl)
-
     revalidatePath('/minha-loja')
     revalidatePath(`/loja/${validatedData.slug}`)
     return { success: true }

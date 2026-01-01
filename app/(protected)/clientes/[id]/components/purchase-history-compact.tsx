@@ -73,16 +73,6 @@ export function PurchaseHistoryCompact({ customerId, initialMovements }: Purchas
 
   // Agrupa movimentações por saleGroupId
   const groupedSales = useMemo(() => {
-    console.log('=== PurchaseHistoryCompact: Agrupando movimentações ===')
-    console.log('Total de movimentações:', movements.length)
-    console.log('Movimentações:', movements.map(m => ({
-      _id: m._id,
-      saleGroupId: m.saleGroupId,
-      productName: m.productId?.name,
-      type: m.type,
-      notes: m.notes,
-    })))
-
     // Separa movimentações de entrada (pagamentos de parcelas) das vendas
     const installmentPayments = movements.filter((m: Movement) => 
       m.type === 'entrada' && m.notes && m.notes.includes('Pagamento de parcela')
@@ -133,10 +123,6 @@ export function PurchaseHistoryCompact({ customerId, initialMovements }: Purchas
         createdAt: m.createdAt,
       })),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-    console.log('Grupos criados:', result.length)
-    console.log('Grupos com saleGroupId:', result.filter(r => r.saleGroupId).length)
-    console.log('Grupos sem saleGroupId:', result.filter(r => !r.saleGroupId).length)
 
     return result
   }, [movements])

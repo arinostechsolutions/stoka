@@ -63,16 +63,6 @@ export default async function CustomerDetailPage({
     saleGroupId: doc.saleGroupId ? doc.saleGroupId.toString() : undefined,
   }))
 
-  // Debug: log das movimentações no servidor
-  console.log('=== SERVER: Movimentações encontradas ===')
-  console.log('Total de movimentações:', movements.length)
-  console.log('Movimentações com saleGroupId:', movements.filter((m: any) => m.saleGroupId).map((m: any) => ({
-    _id: m._id,
-    saleGroupId: m.saleGroupId,
-    productName: m.productId?.name,
-  })))
-  console.log('Movimentações sem saleGroupId:', movements.filter((m: any) => !m.saleGroupId).length)
-
   // Serializa para JSON simples para evitar warnings do Next.js
   const serializedCustomer = JSON.parse(JSON.stringify(customer))
   const serializedMovements = JSON.parse(JSON.stringify(movements))

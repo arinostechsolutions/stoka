@@ -84,18 +84,6 @@ async function fetchInstallments(customerId: string) {
 }
 
 export function PurchaseHistory({ customerId, initialMovements }: PurchaseHistoryProps) {
-  // Log inicial para debug
-  useEffect(() => {
-    console.log('=== PurchaseHistory RENDERIZADO ===')
-    console.log('customerId:', customerId)
-    console.log('initialMovements:', initialMovements)
-    console.log('initialMovements.length:', initialMovements.length)
-    console.log('initialMovements com saleGroupId:', initialMovements.map(m => ({
-      _id: m._id,
-      saleGroupId: m.saleGroupId,
-      productName: m.productId?.name,
-    })))
-  }, [customerId, initialMovements])
   
   const [movements, setMovements] = useState<Movement[]>(initialMovements)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -105,16 +93,12 @@ export function PurchaseHistory({ customerId, initialMovements }: PurchaseHistor
   const [itemsPerPage, setItemsPerPage] = useState(6)
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('table')
 
-  console.log('movements state:', movements)
-  console.log('movements.length:', movements.length)
-
   // Busca parcelas do cliente
   const { data: installments = [] } = useQuery({
     queryKey: ['installments', customerId],
     queryFn: () => fetchInstallments(customerId),
   })
-  
-  console.log('installments:', installments)
+
 
   const toggleSale = (saleId: string) => {
     setExpandedSales(prev => {
@@ -143,15 +127,6 @@ export function PurchaseHistory({ customerId, initialMovements }: PurchaseHistor
   // Agrupa movimentações pelo saleGroupId
   // Separa vendas (saída) de pagamentos de parcelas (entrada)
   const { groupedSales, installmentPayments } = useMemo(() => {
-    console.log('=== AGRUPANDO MOVIMENTAÇÕES ===')
-    console.log('Total de movimentações:', movements.length)
-    console.log('Movimentações:', movements.map(m => ({
-      _id: m._id,
-      saleGroupId: m.saleGroupId,
-      type: m.type,
-      productName: m.productId?.name,
-    })))
-
     const grouped = new Map<string | 'ungrouped', GroupedSale>()
     const ungrouped: Movement[] = []
     const installmentPaymentsList: Movement[] = []
@@ -165,11 +140,6 @@ export function PurchaseHistory({ customerId, initialMovements }: PurchaseHistor
 
       // Converte saleGroupId para string, tratando diferentes formatos
       let groupId: string | null = null
-      console.log('Processando movimento:', {
-        _id: movement._id,
-        saleGroupId: movement.saleGroupId,
-        tipo: typeof movement.saleGroupId,
-      })
       
       if (movement.saleGroupId) {
         if (typeof movement.saleGroupId === 'string') {
@@ -192,9 +162,7 @@ export function PurchaseHistory({ customerId, initialMovements }: PurchaseHistor
       }
 
       if (groupId) {
-        console.log('groupId encontrado:', groupId)
         if (!grouped.has(groupId)) {
-          console.log('Criando novo grupo:', groupId)
           // Normaliza campaignId
           let campaign: { _id: string; name: string } | undefined = undefined
           if (movement.campaignId) {
@@ -215,11 +183,9 @@ export function PurchaseHistory({ customerId, initialMovements }: PurchaseHistor
           })
         }
         const group = grouped.get(groupId)!
-        console.log('Adicionando movimento ao grupo:', groupId, 'Total de movimentos no grupo:', group.movements.length + 1)
         group.movements.push(movement)
         group.totalRevenue += movement.totalRevenue || 0
       } else {
-        console.log('Movimento sem saleGroupId, adicionando a ungrouped')
         ungrouped.push(movement)
       }
     })
@@ -250,15 +216,6 @@ export function PurchaseHistory({ customerId, initialMovements }: PurchaseHistor
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
 
-    console.log('=== RESULTADO DO AGRUPAMENTO ===')
-    console.log('Total de grupos:', salesArray.length)
-    console.log('Grupos:', salesArray.map(s => ({
-      saleGroupId: s.saleGroupId,
-      movementsCount: s.movements.length,
-      totalRevenue: s.totalRevenue,
-    })))
-    console.log('Pagamentos de parcelas:', installmentPaymentsList.length)
-
     return {
       groupedSales: salesArray,
       installmentPayments: installmentPaymentsList.sort((a, b) => {
@@ -266,21 +223,6 @@ export function PurchaseHistory({ customerId, initialMovements }: PurchaseHistor
       })
     }
   }, [movements])
-
-  // Log antes do render
-  console.log('=== ANTES DO RENDER ===')
-  console.log('groupedSales:', groupedSales)
-  console.log('groupedSales.length:', groupedSales.length)
-  console.log('installmentPayments.length:', installmentPayments.length)
-  console.log('Detalhes dos grupos:', groupedSales.map(s => ({
-    saleGroupId: s.saleGroupId,
-    movementsCount: s.movements.length,
-    movements: s.movements.map(m => ({
-      _id: m._id,
-      productName: m.productId?.name,
-      saleGroupId: m.saleGroupId,
-    })),
-  })))
 
   // Calcula paginação
   const totalPages = Math.ceil(groupedSales.length / itemsPerPage) || 1
@@ -790,25 +732,13 @@ function InstallmentInfo({
   installments: any[]
   totalRevenue: number
 }) {
-  console.log('=== InstallmentInfo - INÍCIO ===')
-  console.log('saleGroupId recebido:', saleGroupId)
-  console.log('tipo do saleGroupId:', typeof saleGroupId)
-  console.log('total de installments recebidos:', installments.length)
-  console.log('installments completo:', JSON.stringify(installments, null, 2))
   
   // Normaliza saleGroupId para string
-  const normalizedSaleGroupId = saleGroupId?.toString()
-  console.log('normalizedSaleGroupId:', normalizedSaleGroupId)
-  
+  const normalizedSaleGroupId = saleGroupId?.toString()  
   // Filtra parcelas relacionadas a este saleGroupId
   // O saleGroupId pode vir como string, ObjectId, ou objeto populado
   const relatedInstallments = installments.filter((inst: any) => {
-    console.log('--- Verificando inst ---')
-    console.log('inst.saleGroupId:', inst.saleGroupId)
-    console.log('tipo de inst.saleGroupId:', typeof inst.saleGroupId)
-    
     if (!inst.saleGroupId) {
-      console.log('inst.saleGroupId é null/undefined, retornando false')
       return false
     }
     
@@ -816,34 +746,22 @@ function InstallmentInfo({
     let instSaleGroupId: string
     if (inst.saleGroupId._id) {
       instSaleGroupId = inst.saleGroupId._id.toString()
-      console.log('inst.saleGroupId._id encontrado:', instSaleGroupId)
     } else if (typeof inst.saleGroupId === 'object' && inst.saleGroupId.toString) {
       instSaleGroupId = inst.saleGroupId.toString()
-      console.log('inst.saleGroupId é objeto com toString:', instSaleGroupId)
     } else {
       instSaleGroupId = String(inst.saleGroupId)
-      console.log('inst.saleGroupId convertido para string:', instSaleGroupId)
     }
     
     const matches = instSaleGroupId === normalizedSaleGroupId
-    console.log('Comparação:', instSaleGroupId, '===', normalizedSaleGroupId, '=', matches)
     return matches
   })
 
-  console.log('=== RESULTADO DO FILTRO ===')
-  console.log('relatedInstallments encontradas:', relatedInstallments.length)
-  console.log('relatedInstallments completo:', JSON.stringify(relatedInstallments, null, 2))
-
   if (relatedInstallments.length === 0) {
-    console.log('Nenhuma parcela encontrada, retornando null')
     return null
   }
   
   // Calcula entrada (parcela 0) e parcelas normais
   const downPayment = relatedInstallments.find((inst: any) => inst.installmentNumber === 0)
-  console.log('=== DOWN PAYMENT ===')
-  console.log('downPayment encontrado:', downPayment)
-  console.log('downPayment completo:', JSON.stringify(downPayment, null, 2))
   
   const regularInstallments = relatedInstallments.filter((inst: any) => inst.installmentNumber > 0)
   
@@ -856,33 +774,18 @@ function InstallmentInfo({
   let downPaymentPaid = false
   
   if (downPayment) {
-    console.log('=== CALCULANDO ENTRADA ===')
-    console.log('downPayment.amount:', downPayment.amount)
-    console.log('downPayment.paidAmount:', downPayment.paidAmount)
-    console.log('downPayment.isPaid:', downPayment.isPaid)
-    
     // Se tem paidAmount e é maior que 0, foi paga (pode ser parcial ou total)
     if (downPayment.paidAmount && downPayment.paidAmount > 0) {
       downPaymentAmount = downPayment.paidAmount
       downPaymentPaid = downPayment.isPaid || false
-      console.log('Entrada foi paga, usando paidAmount:', downPaymentAmount)
     } else {
       // Se não foi paga ainda, mostra o valor que deveria ser pago (amount)
       downPaymentAmount = downPayment.amount || 0
       downPaymentPaid = false
-      console.log('Entrada não foi paga, usando amount:', downPaymentAmount)
     }
   } else {
-    console.log('Nenhuma entrada (parcela 0) encontrada')
   }
   
-  console.log('=== RESULTADO FINAL ===')
-  console.log('downPaymentAmount:', downPaymentAmount)
-  console.log('downPaymentPaid:', downPaymentPaid)
-  console.log('paidInstallments:', paidInstallments)
-  console.log('totalInstallments:', totalInstallments)
-  console.log('=== InstallmentInfo - FIM ===')
-
   // Calcula valor total pago
   const totalPaid = relatedInstallments
     .filter((inst: any) => inst.isPaid)

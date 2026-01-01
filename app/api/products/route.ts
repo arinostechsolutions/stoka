@@ -76,7 +76,6 @@ export async function GET(request: Request) {
 
     // Se não encontrou produtos e supplierId foi fornecido, tenta buscar de outra forma
     if (products.length === 0 && supplierId && supplierId !== 'all' && supplierId !== '') {
-      console.log('⚠️ Tentando busca alternativa para supplierId:', supplierId)
       // Tenta buscar todos os produtos do usuário e filtrar manualmente
       const allProducts = await Product.find({ userId: session.user.id as any })
         .select('_id name nome_vitrine imageUrl salePrice quantity supplierId brand size purchasePrice pre_venda genero')
@@ -94,12 +93,10 @@ export async function GET(request: Request) {
                            (typeof p.supplierId === 'string' ? p.supplierId : null))
         return pSupplierId === supplierId
       })
-      console.log('Produtos encontrados com filtro manual:', products.length)
     }
     
     // Se não encontrou produtos, busca todos para verificar se existem produtos com esse supplierId
     if (products.length === 0 && supplierId) {
-      console.log('⚠️ Nenhum produto encontrado com o filtro. Buscando todos os produtos para debug...')
       const allProducts = await Product.find({ userId: session.user.id as any })
         .select('_id name supplierId')
         .populate({
@@ -108,22 +105,13 @@ export async function GET(request: Request) {
           select: 'name',
           strictPopulate: false,
         })
-      console.log('Total de produtos do usuário:', allProducts.length)
       const productsWithSupplier = allProducts.filter((p: any) => {
         const pSupplierId = p.supplierId?.toString ? p.supplierId.toString() : (p.supplierId?._id?.toString ? p.supplierId._id.toString() : p.supplierId)
         return pSupplierId === supplierId
       })
-      console.log('Produtos com supplierId correspondente:', productsWithSupplier.length)
       if (productsWithSupplier.length > 0) {
-        console.log('Primeiro produto encontrado:', {
-          _id: productsWithSupplier[0]._id,
-          name: productsWithSupplier[0].name,
-          supplierId: productsWithSupplier[0].supplierId
-        })
       }
     }
-    
-    console.log('Produtos encontrados com filtro:', products.length)
 
     return NextResponse.json(products)
   } catch (error) {
