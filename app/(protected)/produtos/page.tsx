@@ -4,9 +4,10 @@ import connectDB from '@/lib/db'
 import Product from '@/lib/models/Product'
 import Supplier from '@/lib/models/Supplier'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, Store } from 'lucide-react'
 import { ProductForm } from './components/product-form'
 import { ImportProductsForm } from './components/import-products-form'
+import { ExportNuvemshopButton } from './components/export-nuvemshop-button'
 import { Suspense } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -60,6 +61,12 @@ export default async function ProdutosPage() {
               Importar CSV
             </Button>
           </ImportProductsForm>
+          <ExportNuvemshopButton>
+            <Button size="lg" variant="outline" className="w-full md:w-auto">
+              <Store className="mr-2 h-4 w-4" />
+              Exportar Nuvemshop
+            </Button>
+          </ExportNuvemshopButton>
         </div>
       </div>
 
