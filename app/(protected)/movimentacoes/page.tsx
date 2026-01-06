@@ -53,13 +53,13 @@ async function MovementsList() {
 export default async function MovimentacoesPage() {
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+      <div className="w-full flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold">Movimentações</h1>
           <p className="text-sm md:text-base text-muted-foreground">Histórico de entradas e saídas</p>
         </div>
         <MovementForm>
-          <Button size="lg" className="w-full md:w-auto">
+          <Button className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             Nova Movimentação
           </Button>

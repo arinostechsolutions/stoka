@@ -1,5 +1,17 @@
 import mongoose, { Schema, Document, Model } from 'mongoose'
 
+export type SubscriptionStatus = 
+  | 'trialing'      // Em período de teste
+  | 'active'        // Assinatura ativa
+  | 'canceled'      // Cancelada
+  | 'incomplete'    // Pagamento pendente
+  | 'incomplete_expired' // Pagamento expirou
+  | 'past_due'      // Pagamento atrasado
+  | 'unpaid'        // Não pago
+  | 'paused'        // Pausada
+
+export type PlanType = 'starter' | 'premium' | null
+
 export interface IUser extends Document {
   name: string
   email: string
@@ -8,6 +20,15 @@ export interface IUser extends Document {
   companyName?: string // Razão Social
   tradeName?: string // Nome Fantasia
   phone?: string // Telefone/WhatsApp
+  // Campos do Stripe
+  stripeCustomerId?: string
+  stripeSubscriptionId?: string
+  stripePriceId?: string
+  stripeCurrentPeriodEnd?: Date
+  subscriptionStatus?: SubscriptionStatus
+  plan?: PlanType
+  trialEndsAt?: Date
+  tutorialCompleted?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -46,6 +67,38 @@ const UserSchema = new Schema<IUser>(
     phone: {
       type: String,
       trim: true,
+    },
+    // Campos do Stripe
+    stripeCustomerId: {
+      type: String,
+      trim: true,
+    },
+    stripeSubscriptionId: {
+      type: String,
+      trim: true,
+    },
+    stripePriceId: {
+      type: String,
+      trim: true,
+    },
+    stripeCurrentPeriodEnd: {
+      type: Date,
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ['trialing', 'active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'unpaid', 'paused'],
+    },
+    plan: {
+      type: String,
+      enum: ['starter', 'premium', null],
+      default: null,
+    },
+    trialEndsAt: {
+      type: Date,
+    },
+    tutorialCompleted: {
+      type: Boolean,
+      default: false,
     },
   },
   {

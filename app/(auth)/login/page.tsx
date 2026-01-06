@@ -45,7 +45,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-lg bg-slate-800/50 border-slate-700 backdrop-blur-sm">
       <CardHeader className="space-y-1">
         <div className="flex items-center justify-center mb-4">
           <Image
@@ -53,22 +53,25 @@ export default function LoginPage() {
             alt="Stoka Logo"
             width={200}
             height={120}
-            className="h-16 w-auto"
+            className="h-16 w-auto brightness-0 invert"
             style={{ objectFit: 'contain' }}
           />
         </div>
-        <CardDescription>Entre com sua conta para continuar</CardDescription>
+        <CardTitle className="text-2xl font-bold text-center text-white">Bem-vindo de volta</CardTitle>
+        <CardDescription className="text-center text-slate-300">
+          Entre com sua conta para continuar
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="bg-red-900/20 border-red-800 text-red-300">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-slate-200">Email</Label>
             <Input
               id="email"
               type="email"
@@ -77,10 +80,11 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
+            <Label htmlFor="password" className="text-slate-200">Senha</Label>
             <Input
               id="password"
               type="password"
@@ -89,14 +93,15 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
+              className="bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90" disabled={loading}>
             {loading ? 'Entrando...' : 'Entrar'}
           </Button>
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-center text-sm text-slate-300">
             Não tem conta?{' '}
-            <Link href="/register" className="text-primary hover:underline">
+            <Link href="/precos" className="text-blue-400 hover:text-blue-300 hover:underline font-medium">
               Cadastre-se
             </Link>
           </div>

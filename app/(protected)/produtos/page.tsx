@@ -43,26 +43,26 @@ async function ProductsList() {
 export default async function ProdutosPage() {
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+      <div className="w-full flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold">Produtos</h1>
           <p className="text-sm md:text-base text-muted-foreground">Gerencie seu estoque</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <ProductForm>
-            <Button size="lg" className="w-full md:w-auto">
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Produto
             </Button>
           </ProductForm>
           <ImportProductsForm>
-            <Button size="lg" variant="outline" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Importar CSV
             </Button>
           </ImportProductsForm>
           <ExportNuvemshopButton>
-            <Button size="lg" variant="outline" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Store className="mr-2 h-4 w-4" />
               Exportar Nuvemshop
             </Button>

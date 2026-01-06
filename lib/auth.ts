@@ -45,6 +45,10 @@ export const authOptions: NextAuthOptions = {
           id: user._id.toString(),
           email: user.email,
           name: user.name,
+          plan: user.plan || undefined,
+          subscriptionStatus: user.subscriptionStatus || undefined,
+          trialEndsAt: user.trialEndsAt || undefined,
+          tutorialCompleted: user.tutorialCompleted || false,
         }
       },
     }),
@@ -56,15 +60,36 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id
+        token.plan = user.plan || undefined
+        token.subscriptionStatus = user.subscriptionStatus || undefined
+        token.trialEndsAt = user.trialEndsAt || undefined
+        token.tutorialCompleted = user.tutorialCompleted || false
       }
+
+      // Atualizar dados do usuário quando a sessão for atualizada
+      if (trigger === 'update') {
+        await connectDB()
+        const dbUser = await User.findById(token.id)
+        if (dbUser) {
+          token.plan = dbUser.plan || undefined
+          token.subscriptionStatus = dbUser.subscriptionStatus || undefined
+          token.trialEndsAt = dbUser.trialEndsAt || undefined
+          token.tutorialCompleted = dbUser.tutorialCompleted || false
+        }
+      }
+
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
+        session.user.plan = token.plan || undefined
+        session.user.subscriptionStatus = token.subscriptionStatus || undefined
+        session.user.trialEndsAt = token.trialEndsAt || undefined
+        session.user.tutorialCompleted = token.tutorialCompleted || false
       }
       return session
     },

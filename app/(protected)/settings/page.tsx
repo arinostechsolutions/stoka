@@ -4,6 +4,7 @@ import connectDB from '@/lib/db'
 import User from '@/lib/models/User'
 import { ProfileForm } from './components/profile-form'
 import { PasswordForm } from './components/password-form'
+import { SubscriptionCard } from './components/subscription-card'
 import { Settings } from 'lucide-react'
 
 export default async function SettingsPage() {
@@ -34,6 +35,8 @@ export default async function SettingsPage() {
       </div>
 
       <div className="space-y-4 md:space-y-6">
+        <SubscriptionCard />
+
         <ProfileForm 
           user={{
             name: user.name,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Trophy, Medal, Award, DollarSign, Loader2, MessageCircle } from 'lucide-react'
+import { Trophy, Medal, Award, DollarSign, Loader2, MessageCircle, Crown, Lock } from 'lucide-react'
 import { formatCurrency, formatPhone, getInstagramUrl, getWhatsAppUrl } from '@/lib/utils'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -32,9 +32,30 @@ const medals = [
 ]
 
 export function TopCustomers() {
+  const [isPremium, setIsPremium] = useState<boolean | null>(null)
+  const [loadingPlan, setLoadingPlan] = useState(true)
+
   const now = new Date()
   const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1).padStart(2, '0'))
   const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()))
+
+  // Verificar plano do usuário
+  useEffect(() => {
+    async function checkPlan() {
+      try {
+        const res = await fetch('/api/stripe/subscription')
+        if (res.ok) {
+          const data = await res.json()
+          setIsPremium(data.plan === 'premium')
+        }
+      } catch (error) {
+        console.error('Erro ao verificar plano:', error)
+      } finally {
+        setLoadingPlan(false)
+      }
+    }
+    checkPlan()
+  }, [])
 
   // Gera lista de meses
   const months = Array.from({ length: 12 }, (_, i) => {
@@ -53,10 +74,67 @@ export function TopCustomers() {
   const { data, isLoading } = useQuery({
     queryKey: ['top-customers', selectedMonth, selectedYear],
     queryFn: () => fetchTopCustomers(selectedMonth, selectedYear),
+    enabled: isPremium === true, // Só busca se for premium
   })
 
   const topCustomers = data?.topCustomers || []
 
+  // Loading do plano
+  if (loadingPlan) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            Top 3 Clientes do Mês
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Se não for Premium, mostrar card de upgrade
+  if (!isPremium) {
+    return (
+      <Card className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-amber-500/10 pointer-events-none" />
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            Top 3 Clientes do Mês
+            <Crown className="h-4 w-4 text-amber-500 ml-auto" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6">
+            <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
+              <Lock className="h-8 w-8 text-amber-500" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">Funcionalidade Premium</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Veja quem são seus melhores clientes do mês e acompanhe o ranking de vendas.
+            </p>
+            <Button 
+              asChild 
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md"
+            >
+              <Link href="/precos" className="gap-2">
+                <Crown className="h-4 w-4" />
+                Fazer Upgrade para Premium
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Se for Premium, mostrar o componente normal
   return (
     <Card>
       <CardHeader>
@@ -177,4 +255,3 @@ export function TopCustomers() {
     </Card>
   )
 }
-

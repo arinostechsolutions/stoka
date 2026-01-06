@@ -19,7 +19,10 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={() => onOpenChange(false)}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        }}
       />
       
       {/* Content */}
@@ -32,8 +35,24 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
 
 const DialogContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { onClose?: () => void }
->(({ className, onClose, children, onDrag, onDragStart, onDragEnd, onAnimationStart, onAnimationEnd, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & { 
+    onClose?: () => void
+    onInteractOutside?: (e: Event) => void
+    onEscapeKeyDown?: (e: KeyboardEvent) => void
+  }
+>(({ className, onClose, onInteractOutside, onEscapeKeyDown, children, onDrag, onDragStart, onDragEnd, onAnimationStart, onAnimationEnd, ...props }, ref) => {
+  // Handle escape key
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onEscapeKeyDown) {
+        onEscapeKeyDown(e)
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [onEscapeKeyDown])
+
+  return (
   <motion.div
     ref={ref}
     initial={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -63,7 +82,8 @@ const DialogContent = React.forwardRef<
       {children}
     </div>
   </motion.div>
-))
+  )
+})
 DialogContent.displayName = "DialogContent"
 
 const DialogHeader = ({
@@ -131,4 +151,18 @@ const DialogTrigger = React.forwardRef<
 })
 DialogTrigger.displayName = "DialogTrigger"
 
-export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger }
+const DialogFooter = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn(
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      className
+    )}
+    {...props}
+  />
+)
+DialogFooter.displayName = "DialogFooter"
+
+export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter }

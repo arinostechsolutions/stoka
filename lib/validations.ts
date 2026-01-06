@@ -1,14 +1,25 @@
 import { z } from 'zod'
+import { validatePasswordStrength } from './password-validator'
+
+// Validação customizada de senha forte
+const strongPasswordSchema = z.string()
+  .min(8, 'Senha deve ter no mínimo 8 caracteres')
+  .refine((password) => {
+    const strength = validatePasswordStrength(password)
+    return strength.isValid
+  }, {
+    message: 'Senha deve conter: maiúsculas, minúsculas, números e caracteres especiais',
+  })
 
 export const loginSchema = z.object({
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  password: z.string().min(1, 'Senha é obrigatória'),
 })
 
 export const registerSchema = z.object({
   name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres'),
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  password: strongPasswordSchema,
 })
 
 export const productSchema = z.object({
