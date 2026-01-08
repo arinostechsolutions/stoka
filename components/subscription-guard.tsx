@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, ReactNode } from 'react'
+import { useState, useEffect, useCallback, ReactNode } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { AlertCircle, CreditCard, Clock, XCircle, Crown, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -34,11 +34,7 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const [loading, setLoading] = useState(true)
   const [blockReason, setBlockReason] = useState<'no_subscription' | 'expired' | 'past_due' | 'premium_required' | null>(null)
 
-  useEffect(() => {
-    checkAccess()
-  }, [pathname])
-
-  const checkAccess = async () => {
+  const checkAccess = useCallback(async () => {
     try {
       const response = await fetch('/api/stripe/subscription')
       if (!response.ok) {
@@ -67,6 +63,13 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
         return
       }
 
+      // Se estiver cancelado, bloquear imediatamente (mesmo durante trial)
+      if (data.status === 'canceled') {
+        setBlockReason('expired')
+        setLoading(false)
+        return
+      }
+
       // Verificar se tem acesso ativo
       let hasActiveAccess = false
 
@@ -77,10 +80,6 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       // Ativo
       else if (data.status === 'active') {
         hasActiveAccess = true
-      }
-      // Cancelado - verificar se ainda está no período
-      else if (data.status === 'canceled' && data.currentPeriodEnd) {
-        hasActiveAccess = new Date(data.currentPeriodEnd) > now
       }
       // Pagamento atrasado
       else if (data.status === 'past_due') {
@@ -111,7 +110,11 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
       console.error('Erro ao verificar subscription:', error)
       setLoading(false)
     }
-  }
+  }, [pathname])
+
+  useEffect(() => {
+    checkAccess()
+  }, [checkAccess])
 
   // Loading state
   if (loading) {

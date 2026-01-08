@@ -163,6 +163,7 @@ export function ReportsContent() {
     topProducts = [],
     diagnostics = null,
     salesByPaymentMethod = {},
+    salesBySize = [],
   } = data || {}
 
   // Formata a data para exibição (DD/MM)
@@ -740,6 +741,104 @@ export function ReportsContent() {
                     <Tooltip />
                     <Legend />
                     <Bar dataKey="quantidade" fill="#3b82f6" name="Quantidade de Vendas" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gráfico de Tamanhos Mais Vendidos */}
+      {salesBySize && Array.isArray(salesBySize) && salesBySize.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Tamanhos Mais Vendidos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Lista de tamanhos */}
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {salesBySize.map((item: { size: string; quantity: number; totalValue: number }) => (
+                  <div
+                    key={item.size}
+                    className="p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold text-primary">
+                          {item.size}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-green-600">
+                          {item.quantity} {item.quantity === 1 ? 'unidade' : 'unidades'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatCurrency(item.totalValue)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2 mt-2">
+                      <div
+                        className="bg-primary h-2 rounded-full transition-all"
+                        style={{
+                          width: `${salesBySize[0].quantity > 0 
+                            ? (item.quantity / salesBySize[0].quantity) * 100 
+                            : 0}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Gráfico de barras - Quantidade */}
+              <div>
+                <h3 className="text-sm font-medium mb-4">Quantidade Vendida por Tamanho</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={salesBySize.map((item: { size: string; quantity: number; totalValue: number }) => ({
+                    name: item.size,
+                    quantidade: item.quantity,
+                    valor: item.totalValue,
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: any, name?: string) => {
+                        if (name === 'quantidade') {
+                          return `${value} ${value === 1 ? 'unidade' : 'unidades'}`
+                        }
+                        return formatCurrency(value)
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="quantidade" fill="#3b82f6" name="Quantidade Vendida" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Gráfico de barras - Valor */}
+              <div>
+                <h3 className="text-sm font-medium mb-4">Valor Total de Vendas por Tamanho</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={salesBySize.map((item: { size: string; quantity: number; totalValue: number }) => ({
+                    name: item.size,
+                    quantidade: item.quantity,
+                    valor: item.totalValue,
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: any) => formatCurrency(value)}
+                    />
+                    <Legend />
+                    <Bar dataKey="valor" fill="#10b981" name="Valor Total" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

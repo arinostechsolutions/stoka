@@ -91,17 +91,18 @@ export function SubscriptionCard() {
       const data = await response.json()
       
       if (data.success) {
-        alert('Assinatura cancelada. Você ainda terá acesso até o final do período atual.')
         await fetchSubscription()
         await update() // Atualizar sessão
         router.refresh()
+        // Redirecionar para dashboard imediatamente
+        router.push('/dashboard')
       } else {
         alert(data.error || 'Erro ao cancelar assinatura')
+        setCancelLoading(false)
       }
     } catch (error) {
       console.error('Erro:', error)
       alert('Erro ao cancelar assinatura')
-    } finally {
       setCancelLoading(false)
     }
   }
@@ -328,47 +329,49 @@ export function SubscriptionCard() {
                   <RefreshCcw className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                /* Botão Cancelar */
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="destructive"
-                      className="flex-1"
-                      disabled={cancelLoading}
-                    >
-                      {cancelLoading ? 'Cancelando...' : 'Cancelar Plano'}
-                      <XCircle className="ml-2 h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Cancelar Assinatura?</AlertDialogTitle>
-                      <AlertDialogDescription className="space-y-2">
-                        <p>
-                          Tem certeza que deseja cancelar sua assinatura do <strong>Plano {subscription.planFormatted}</strong>?
-                        </p>
-                        <p>
-                          Você ainda terá acesso até o final do período atual
-                          {subscription.currentPeriodEnd && (
-                            <> ({format(new Date(subscription.currentPeriodEnd), "d 'de' MMMM 'de' yyyy", { locale: ptBR })})</>
-                          )}.
-                        </p>
-                        <p className="text-sm">
-                          Você pode reativar a qualquer momento antes dessa data.
-                        </p>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Voltar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleCancelSubscription}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                /* Botão Cancelar - só mostra se não estiver cancelado */
+                !isCanceled && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        className="flex-1"
+                        disabled={cancelLoading}
                       >
-                        Sim, Cancelar Assinatura
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        {cancelLoading ? 'Cancelando...' : 'Cancelar Plano'}
+                        <XCircle className="ml-2 h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancelar Assinatura?</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-2">
+                          <p>
+                            Tem certeza que deseja cancelar sua assinatura do <strong>Plano {subscription.planFormatted}</strong>?
+                          </p>
+                          <p>
+                            Você ainda terá acesso até o final do período atual
+                            {subscription.currentPeriodEnd && (
+                              <> ({format(new Date(subscription.currentPeriodEnd), "d 'de' MMMM 'de' yyyy", { locale: ptBR })})</>
+                            )}.
+                          </p>
+                          <p className="text-sm">
+                            Você pode reativar a qualquer momento antes dessa data.
+                          </p>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Voltar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleCancelSubscription}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Sim, Cancelar Assinatura
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )
               )}
             </div>
           </>

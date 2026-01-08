@@ -27,29 +27,51 @@ export async function POST() {
       )
     }
 
-    // Cancelar assinatura no Stripe (ao final do período atual)
-    const subscription = await stripe.subscriptions.update(
-      user.stripeSubscriptionId,
-      {
-        cancel_at_period_end: true,
-      }
-    )
+    // Verificar se está em trial
+    const isTrialing = user.subscriptionStatus === 'trialing' && 
+                       user.trialEndsAt && 
+                       new Date(user.trialEndsAt) > new Date()
 
-    const subscriptionData = subscription as any // eslint-disable-line
+    // Preparar dados de atualização
+    const updateData: Record<string, unknown> = {
+      subscriptionStatus: 'canceled',
+    }
+
+    let cancelAt: string | null = null
+
+    // Se estiver em trial, cancelar imediatamente no Stripe e remover trialEndsAt
+    if (isTrialing) {
+      // Cancelar subscription imediatamente no Stripe
+      await stripe.subscriptions.cancel(user.stripeSubscriptionId)
+      console.log('✅ Subscription cancelada imediatamente (estava em trial)')
+      
+      // Remover trialEndsAt para bloquear acesso imediatamente
+      updateData.trialEndsAt = null
+    } else {
+      // Se já estiver ativo, cancelar ao final do período atual
+      const subscription = await stripe.subscriptions.update(
+        user.stripeSubscriptionId,
+        { cancel_at_period_end: true }
+      )
+      console.log('✅ Subscription será cancelada ao final do período')
+      
+      const subData = subscription as any // eslint-disable-line
+      cancelAt = subData.cancel_at 
+        ? new Date(subData.cancel_at * 1000).toISOString()
+        : subData.current_period_end 
+          ? new Date(subData.current_period_end * 1000).toISOString()
+          : null
+    }
 
     // Atualizar usuário no banco
-    await User.findByIdAndUpdate(user._id, {
-      subscriptionStatus: 'canceled',
-    })
+    await User.findByIdAndUpdate(user._id, updateData)
 
     return NextResponse.json({
       success: true,
-      message: 'Assinatura será cancelada ao final do período atual',
-      cancelAt: subscriptionData.cancel_at 
-        ? new Date(subscriptionData.cancel_at * 1000).toISOString()
-        : subscriptionData.current_period_end 
-          ? new Date(subscriptionData.current_period_end * 1000).toISOString()
-          : null,
+      message: isTrialing 
+        ? 'Assinatura cancelada imediatamente (estava em trial)'
+        : 'Assinatura será cancelada ao final do período atual',
+      cancelAt,
     })
   } catch (error) {
     console.error('Erro ao cancelar assinatura:', error)

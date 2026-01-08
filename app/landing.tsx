@@ -226,9 +226,13 @@ export default function LandingPage() {
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-white py-2">
                   Entrar
                 </Link>
-                <Button asChild className="rounded-full mt-2 bg-emerald-500 hover:bg-emerald-600">
-                  <Link href="/precos">Começar Agora</Link>
-                </Button>
+                <Link 
+                  href="/precos" 
+                  onClick={() => setMobileMenuOpen(false)} 
+                  className="flex items-center justify-center rounded-full mt-2 bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 px-6 relative z-10 pointer-events-auto touch-manipulation transition-colors font-medium"
+                >
+                  Começar Agora
+                </Link>
               </nav>
             </motion.div>
           )}
@@ -279,17 +283,21 @@ export default function LandingPage() {
               {/* CTAs */}
               <motion.div 
                 variants={fadeInUp}
-                className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
+                className="mt-10 flex flex-col sm:flex-row gap-4 justify-center relative z-10"
               >
-                <Button asChild size="lg" className="rounded-full px-8 text-base h-12 bg-emerald-500 hover:bg-emerald-600 text-white">
-                  <Link href="/precos" className="flex items-center gap-2">
-                    Começar Grátis
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" className="rounded-full px-8 text-base h-12 bg-slate-700 hover:bg-slate-600 text-white border-0">
-                  <Link href="/login">Já tenho conta</Link>
-                </Button>
+                <Link 
+                  href="/precos" 
+                  className="flex items-center justify-center gap-2 rounded-full px-8 text-base h-12 bg-emerald-500 hover:bg-emerald-600 text-white relative z-10 pointer-events-auto touch-manipulation transition-colors font-medium"
+                >
+                  Começar Grátis
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link 
+                  href="/login" 
+                  className="flex items-center justify-center rounded-full px-8 text-base h-12 bg-slate-700 hover:bg-slate-600 text-white border-0 relative z-10 pointer-events-auto touch-manipulation transition-colors font-medium"
+                >
+                  Já tenho conta
+                </Link>
               </motion.div>
 
               {/* Trust indicators */}

@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { LayoutDashboard, Package, ArrowLeftRight, Settings, LogOut, Building2, BarChart3, FileText, Store, Users, Megaphone, Globe, Crown, Lock } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { PlanIndicator } from './plan-indicator'
+import { useSubscription } from '@/hooks/useSubscription'
 
 // Definir quais rotas são de cada plano
 type PlanType = 'starter' | 'premium' | 'all'
@@ -39,35 +40,10 @@ interface SidebarContentProps {
   showLogo?: boolean
 }
 
-interface SubscriptionData {
-  plan: 'starter' | 'premium' | null
-  isActive: boolean
-  isTrialing: boolean
-}
-
 export function SidebarContent({ onLinkClick, showLogo = true }: SidebarContentProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchSubscription()
-  }, [])
-
-  const fetchSubscription = async () => {
-    try {
-      const response = await fetch('/api/stripe/subscription')
-      if (response.ok) {
-        const data = await response.json()
-        setSubscription(data)
-      }
-    } catch (error) {
-      console.error('Erro ao buscar subscription:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: subscription, isLoading: loading } = useSubscription()
 
   // Prefetch de todas as rotas ao montar o componente
   useEffect(() => {

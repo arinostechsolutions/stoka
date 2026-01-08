@@ -52,13 +52,44 @@ Este documento explica como configurar o Stripe para o Stoka em ambientes de des
 
 ### Para desenvolvimento local:
 
-1. Instale o Stripe CLI: https://stripe.com/docs/stripe-cli
-2. Faça login: `stripe login`
-3. Inicie o listener:
+1. **Instale o Stripe CLI:**
+   - Windows: Baixe em https://github.com/stripe/stripe-cli/releases ou use `scoop install stripe`
+   - Mac: `brew install stripe/stripe-cli/stripe`
+   - Linux: Siga as instruções em https://stripe.com/docs/stripe-cli
+
+2. **Faça login no Stripe CLI:**
+   ```bash
+   stripe login
+   ```
+   Isso abrirá o navegador para autenticar. A autenticação é necessária apenas uma vez.
+
+3. **Inicie o listener local:**
    ```bash
    stripe listen --forward-to localhost:3000/api/stripe/webhook
    ```
-4. Copie o **webhook signing secret** que aparece no terminal (começa com `whsec_`)
+   
+   ⚠️ **Importante:** 
+   - Certifique-se de que sua aplicação está rodando na porta 3000 antes de executar este comando
+   - Mantenha este terminal aberto enquanto estiver desenvolvendo
+   - O comando ficará rodando e encaminhará os eventos do Stripe para sua aplicação local
+
+4. **Copie o Webhook Signing Secret:**
+   - Quando você executar o comando acima, o Stripe CLI mostrará algo como:
+     ```
+     > Ready! Your webhook signing secret is whsec_xxxxxxxxxxxxx
+     ```
+   - Copie este valor (começa com `whsec_`) e adicione no seu `.env.local` como `STRIPE_WEBHOOK_SECRET_TEST`
+
+5. **Testar o webhook:**
+   - Você pode testar eventos específicos usando:
+     ```bash
+     stripe trigger checkout.session.completed
+     ```
+   - Ou testar outros eventos como:
+     ```bash
+     stripe trigger customer.subscription.created
+     stripe trigger customer.subscription.deleted
+     ```
 
 ### Para produção:
 

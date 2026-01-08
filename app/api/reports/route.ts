@@ -150,7 +150,7 @@ export async function GET(request: Request) {
     })
 
     const saidaMovements = await Movement.find(revenueMatch)
-      .populate('productId', 'purchasePrice name')
+      .populate('productId', 'purchasePrice name size')
       .lean()
 
     let totalRevenue = 0
@@ -274,6 +274,51 @@ export async function GET(request: Request) {
       salesByPaymentMethod[method].count += 1
       salesByPaymentMethod[method].totalValue += group.totalRevenue
     })
+
+    // ========== VENDAS POR TAMANHO ==========
+    const salesBySize: Record<string, { quantity: number; totalValue: number }> = {}
+    
+    saidaMovements.forEach((movement: any) => {
+      const productSize = movement.productId?.size
+      if (!productSize) return // Ignora produtos sem tamanho
+      
+      const sizeKey = productSize.trim().toUpperCase() // Normaliza o tamanho
+      
+      // Calcula receita desta movimentação
+      let movementRevenue = 0
+      if (movement.totalRevenue && movement.totalRevenue > 0) {
+        movementRevenue = movement.totalRevenue
+      } else if (movement.salePrice && movement.quantity) {
+        let subtotal = movement.salePrice * movement.quantity
+        let discount = 0
+        
+        if (movement.discountType && movement.discountValue !== undefined) {
+          if (movement.discountType === 'percent') {
+            discount = subtotal * (movement.discountValue / 100)
+          } else {
+            discount = movement.discountValue
+          }
+        }
+        
+        movementRevenue = Math.max(0, subtotal - discount)
+      }
+      
+      if (!salesBySize[sizeKey]) {
+        salesBySize[sizeKey] = { quantity: 0, totalValue: 0 }
+      }
+      
+      salesBySize[sizeKey].quantity += movement.quantity
+      salesBySize[sizeKey].totalValue += movementRevenue
+    })
+    
+    // Converte para array e ordena por quantidade (descendente)
+    const salesBySizeArray = Object.entries(salesBySize)
+      .map(([size, data]) => ({
+        size,
+        quantity: data.quantity,
+        totalValue: data.totalValue,
+      }))
+      .sort((a, b) => b.quantity - a.quantity)
 
     // ========== CÁLCULO DE TOTAL GASTO (TODAS AS COMPRAS) ==========
     const allEntradaMovementsForTotal = await Movement.find({
@@ -624,6 +669,7 @@ export async function GET(request: Request) {
       topProducts: topProductsWithValue,
       diagnostics, // Métricas de diagnóstico
       salesByPaymentMethod, // Vendas por meio de pagamento
+      salesBySize: salesBySizeArray, // Vendas por tamanho
     })
   } catch (error) {
     console.error('Error fetching reports:', error)

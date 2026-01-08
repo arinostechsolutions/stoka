@@ -19,6 +19,8 @@ function getSubscriptionData(subscription: Stripe.Subscription) {
     currentPeriodEnd: sub.current_period_end as number | undefined,
     trialEnd: sub.trial_end as number | null,
     priceId: sub.items?.data?.[0]?.price?.id as string,
+    cancelAtPeriodEnd: sub.cancel_at_period_end as boolean | undefined,
+    canceledAt: sub.canceled_at as number | null,
   }
 }
 
@@ -174,6 +176,8 @@ export async function POST(request: NextRequest) {
         console.log('👤 Customer ID:', customerId)
         console.log('📊 Status:', subscription.status)
         console.log('💰 Price ID:', subscription.priceId)
+        console.log('🚫 Cancel at period end:', subscription.cancelAtPeriodEnd)
+        console.log('⏰ Canceled at:', subscription.canceledAt)
 
         // Encontrar usuário pelo customerId
         const user = await User.findOne({ stripeCustomerId: customerId })
@@ -229,17 +233,39 @@ export async function POST(request: NextRequest) {
             }
           }
 
+          const periodEnd = safeDate(subscription.currentPeriodEnd)
+          const trialEnd = safeDate(subscription.trialEnd)
+          
+          // Se cancel_at_period_end for true e estiver em trial, marcar como canceled e remover trialEndsAt
+          // Isso garante bloqueio imediato quando usuário cancela durante trial
+          const isTrialing = subscription.status === 'trialing' && trialEnd && new Date(trialEnd.getTime()) > new Date()
+          // Verificar também canceledAt para garantir que foi cancelado
+          const isCanceled = subscription.canceledAt !== null && subscription.canceledAt !== undefined
+          const shouldBlockTrial = (subscription.cancelAtPeriodEnd || isCanceled) && isTrialing
+          
+          console.log('🔍 Verificações:')
+          console.log('   Está em trial?', isTrialing)
+          console.log('   Foi cancelado?', isCanceled)
+          console.log('   Cancel at period end?', subscription.cancelAtPeriodEnd)
+          console.log('   Deve bloquear trial?', shouldBlockTrial)
+          
           const updateData: Record<string, unknown> = {
             stripeSubscriptionId: subscription.id,
             stripePriceId: priceId,
-            subscriptionStatus: subscription.status,
+            // Se estiver cancelando durante trial, marcar como canceled imediatamente
+            subscriptionStatus: shouldBlockTrial ? 'canceled' : subscription.status,
             plan: plan,
           }
           
-          const periodEnd = safeDate(subscription.currentPeriodEnd)
-          const trialEnd = safeDate(subscription.trialEnd)
           if (periodEnd) updateData.stripeCurrentPeriodEnd = periodEnd
-          if (trialEnd) updateData.trialEndsAt = trialEnd
+          
+          // Se cancelar durante trial, remover trialEndsAt para bloquear acesso imediatamente
+          if (shouldBlockTrial || subscription.status === 'canceled') {
+            console.log('⚠️ Cancelamento durante trial detectado - removendo trialEndsAt e bloqueando acesso')
+            updateData.trialEndsAt = null
+          } else if (trialEnd) {
+            updateData.trialEndsAt = trialEnd
+          }
 
           console.log('📝 Dados a atualizar:', JSON.stringify(updateData, null, 2))
 
@@ -281,18 +307,39 @@ export async function POST(request: NextRequest) {
                   plan = amount <= 5000 ? 'starter' : 'premium'
                 }
 
+                const periodEndByEmail = safeDate(subscription.currentPeriodEnd)
+                const trialEndByEmail = safeDate(subscription.trialEnd)
+                
+                // Se cancel_at_period_end for true e estiver em trial, marcar como canceled e remover trialEndsAt
+                const isTrialingByEmail = subscription.status === 'trialing' && trialEndByEmail && new Date(trialEndByEmail.getTime()) > new Date()
+                // Verificar também canceledAt para garantir que foi cancelado
+                const isCanceledByEmail = subscription.canceledAt !== null && subscription.canceledAt !== undefined
+                const shouldBlockTrialByEmail = (subscription.cancelAtPeriodEnd || isCanceledByEmail) && isTrialingByEmail
+                
+                console.log('🔍 Verificações (por email):')
+                console.log('   Está em trial?', isTrialingByEmail)
+                console.log('   Foi cancelado?', isCanceledByEmail)
+                console.log('   Cancel at period end?', subscription.cancelAtPeriodEnd)
+                console.log('   Deve bloquear trial?', shouldBlockTrialByEmail)
+                
                 const updateByEmail: Record<string, unknown> = {
                   stripeCustomerId: customerId,
                   stripeSubscriptionId: subscription.id,
                   stripePriceId: priceId,
-                  subscriptionStatus: subscription.status,
+                  // Se estiver cancelando durante trial, marcar como canceled imediatamente
+                  subscriptionStatus: shouldBlockTrialByEmail ? 'canceled' : subscription.status,
                   plan: plan,
                 }
                 
-                const periodEndByEmail = safeDate(subscription.currentPeriodEnd)
-                const trialEndByEmail = safeDate(subscription.trialEnd)
                 if (periodEndByEmail) updateByEmail.stripeCurrentPeriodEnd = periodEndByEmail
-                if (trialEndByEmail) updateByEmail.trialEndsAt = trialEndByEmail
+                
+                // Se cancelar durante trial, remover trialEndsAt para bloquear acesso imediatamente
+                if (shouldBlockTrialByEmail || subscription.status === 'canceled') {
+                  console.log('⚠️ Cancelamento durante trial detectado - removendo trialEndsAt e bloqueando acesso')
+                  updateByEmail.trialEndsAt = null
+                } else if (trialEndByEmail) {
+                  updateByEmail.trialEndsAt = trialEndByEmail
+                }
                 
                 await User.findByIdAndUpdate(userByEmail._id, updateByEmail)
                 console.log('✅ Usuário atualizado por email!')

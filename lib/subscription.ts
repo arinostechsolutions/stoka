@@ -52,12 +52,16 @@ export function getSubscriptionInfo(user: IUser | null): SubscriptionInfo {
   const trialEndsAt = user.trialEndsAt || null
   const currentPeriodEnd = user.stripeCurrentPeriodEnd || null
 
-  // Verificar se está em trial
-  const isTrialing = !!(status === 'trialing' && trialEndsAt && new Date(trialEndsAt) > new Date())
+  // Se o status for canceled, não considerar trial mesmo que trialEndsAt ainda não tenha passado
+  // Isso garante que usuários que cancelam durante trial sejam bloqueados imediatamente
+  const isCanceled = status === 'canceled'
+  
+  // Verificar se está em trial (apenas se não estiver cancelado)
+  const isTrialing = !!(status === 'trialing' && !isCanceled && trialEndsAt && new Date(trialEndsAt) > new Date())
 
-  // Verificar se subscription está ativa
+  // Verificar se subscription está ativa (canceled não é considerado ativo, mesmo durante trial)
   const activeStatuses: SubscriptionStatus[] = ['active', 'trialing']
-  const isActive = status !== null && activeStatuses.includes(status)
+  const isActive = status !== null && activeStatuses.includes(status) && !isCanceled
 
   // Calcular dias restantes no trial
   let daysLeftInTrial: number | null = null

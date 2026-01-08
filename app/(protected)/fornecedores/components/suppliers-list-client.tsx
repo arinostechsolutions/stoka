@@ -82,7 +82,7 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {/* Filtros e Visualização */}
       <Card>
         <CardHeader>
@@ -194,13 +194,13 @@ export function SuppliersListClient({ initialSuppliers }: SuppliersListClientPro
       ) : (
         <>
           {viewMode === 'cards' ? (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full">
               {paginatedSuppliers.map((supplier: any) => (
                 <SupplierCard key={supplier._id.toString()} supplier={supplier} />
               ))}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 w-full">
               {paginatedSuppliers.map((supplier: any) => (
                 <Card key={supplier._id.toString()} className="group hover:shadow-md transition-shadow">
                   <CardContent className="pt-4 md:pt-6">

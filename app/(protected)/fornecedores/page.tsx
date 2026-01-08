@@ -32,7 +32,7 @@ async function SuppliersList() {
 
 export default async function FornecedoresPage() {
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 w-full">
       <div className="w-full flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold">Fornecedores</h1>

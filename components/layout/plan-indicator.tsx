@@ -1,41 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Crown, Sparkles, Clock, AlertTriangle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-
-interface SubscriptionData {
-  isActive: boolean
-  isTrialing: boolean
-  plan: 'starter' | 'premium' | null
-  status: string | null
-  daysLeftInTrial: number | null
-  currentPeriodEnd: string | null
-}
+import { useSubscription } from '@/hooks/useSubscription'
 
 export function PlanIndicator() {
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchSubscription()
-  }, [])
-
-  const fetchSubscription = async () => {
-    try {
-      const response = await fetch('/api/stripe/subscription')
-      if (response.ok) {
-        const data = await response.json()
-        setSubscription(data)
-      }
-    } catch (error) {
-      console.error('Erro ao buscar assinatura:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { data: subscription, isLoading: loading } = useSubscription()
 
   // Calcular dias até próxima cobrança
   const getDaysUntilBilling = () => {
